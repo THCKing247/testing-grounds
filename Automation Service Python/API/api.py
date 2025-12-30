@@ -169,36 +169,97 @@ def list_services():
 
 @app.route('/api/services/data-clean', methods=['POST'])
 def data_clean():
-    """Data Clean Engine service"""
+    """Data Clean Engine service - supports file uploads and multiple formats"""
     try:
-        data = request.get_json()
-        csv_text = data.get('csv_text', '')
-        delimiter = data.get('delimiter', ',')
-        normalize_headers = data.get('normalize_headers', True)
-        drop_empty_rows = data.get('drop_empty_rows', True)
+        # Check if file was uploaded
+        if 'file' in request.files:
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'success': False, 'error': 'No file selected'}), 400
+            
+            filename = file.filename
+            file_content = file.read()
+            
+            # Get options from form data
+            delimiter = request.form.get('delimiter', ',')
+            normalize_headers = request.form.get('normalize_headers', 'true').lower() == 'true'
+            drop_empty_rows = request.form.get('drop_empty_rows', 'true').lower() == 'true'
+            apply_crm_mappings = request.form.get('apply_crm_mappings', 'true').lower() == 'true'
+            file_type = request.form.get('file_type')  # Optional override
+            sheet_name = request.form.get('sheet_name')  # For Excel files
+            
+            cleaned_csv, report = data_clean_engine.clean_file(
+                file_content,
+                filename,
+                file_type=file_type if file_type else None,
+                delimiter=delimiter,
+                normalize_headers=normalize_headers,
+                drop_empty_rows=drop_empty_rows,
+                apply_crm_mappings=apply_crm_mappings,
+                sheet_name=sheet_name if sheet_name else None,
+            )
+            
+            return jsonify({
+                'success': True,
+                'cleaned_csv': cleaned_csv,
+                'report': {
+                    'rows_in': report.rows_in,
+                    'rows_out': report.rows_out,
+                    'columns_in': report.columns_in,
+                    'columns_out': report.columns_out,
+                    'header_map': report.header_map,
+                    'fixes': report.fixes,
+                    'started_at': report.started_at,
+                    'finished_at': report.finished_at,
+                    'file_type': report.file_type,
+                    'crm_detected': report.crm_detected,
+                    'field_mappings': report.field_mappings,
+                }
+            })
         
-        cleaned_csv, report = data_clean_engine.clean_csv_text(
-            csv_text,
-            delimiter=delimiter,
-            normalize_headers=normalize_headers,
-            drop_empty_rows=drop_empty_rows
-        )
-        
-        return jsonify({
-            'success': True,
-            'cleaned_csv': cleaned_csv,
-            'report': {
-                'rows_in': report.rows_in,
-                'rows_out': report.rows_out,
-                'columns_in': report.columns_in,
-                'columns_out': report.columns_out,
-                'header_map': report.header_map,
-                'fixes': report.fixes,
-                'started_at': report.started_at,
-                'finished_at': report.finished_at
-            }
-        })
+        # Fallback to text-based input (for backward compatibility)
+        if request.is_json:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
+            csv_text = data.get('csv_text', '')
+            if not csv_text:
+                return jsonify({'success': False, 'error': 'No CSV text provided'}), 400
+            
+            delimiter = data.get('delimiter', ',')
+            normalize_headers = data.get('normalize_headers', True)
+            drop_empty_rows = data.get('drop_empty_rows', True)
+            
+            cleaned_csv, report = data_clean_engine.clean_csv_text(
+                csv_text,
+                delimiter=delimiter,
+                normalize_headers=normalize_headers,
+                drop_empty_rows=drop_empty_rows
+            )
+            
+            return jsonify({
+                'success': True,
+                'cleaned_csv': cleaned_csv,
+                'report': {
+                    'rows_in': report.rows_in,
+                    'rows_out': report.rows_out,
+                    'columns_in': report.columns_in,
+                    'columns_out': report.columns_out,
+                    'header_map': report.header_map,
+                    'fixes': report.fixes,
+                    'started_at': report.started_at,
+                    'finished_at': report.finished_at,
+                    'file_type': getattr(report, 'file_type', 'csv'),
+                    'crm_detected': getattr(report, 'crm_detected', None),
+                    'field_mappings': getattr(report, 'field_mappings', {}),
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': 'No file or data provided'}), 400
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 400
 
 

@@ -2120,26 +2120,81 @@ function loadServiceInterface(serviceId, container) {
 function renderDataCleanInterface(container) {
   container.innerHTML = `
     <h2 style="margin:0 0 24px;font-size:28px;">🧹 Data Clean Engine</h2>
-    <p style="color:var(--muted);margin-bottom:24px;">Cleans, standardizes, and fixes messy CSV/Excel files.</p>
+    <p style="color:var(--muted);margin-bottom:24px;">Cleans, standardizes, and fixes messy data files. Supports CSV, Excel (XLSX/XLS), JSON, TSV, and CRM exports (Salesforce, HubSpot, Pipedrive).</p>
     
-    <form id="data-clean-form" onsubmit="handleDataClean(event)">
+    <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:16px;margin-bottom:24px;">
+      <h3 style="margin:0 0 12px;font-size:16px;color:var(--accent);">📋 Supported Formats</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:14px;">
+        <div>• CSV files</div>
+        <div>• Excel (XLSX/XLS)</div>
+        <div>• JSON files</div>
+        <div>• TSV files</div>
+        <div>• Salesforce exports</div>
+        <div>• HubSpot exports</div>
+        <div>• Pipedrive exports</div>
+      </div>
+    </div>
+    
+    <form id="data-clean-form" enctype="multipart/form-data" onsubmit="handleDataClean(event)">
       <div class="form-group" style="margin-bottom:20px;">
-        <label style="display:block;margin-bottom:8px;font-weight:500;">CSV Content</label>
-        <textarea id="csv-text" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;" 
-                  placeholder="Paste your CSV content here..." required></textarea>
+        <label style="display:block;margin-bottom:8px;font-weight:500;">Upload File</label>
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;background:var(--bg);transition:all 0.2s;" 
+             id="file-drop-zone" 
+             ondrop="handleFileDrop(event)" 
+             ondragover="event.preventDefault();event.currentTarget.style.borderColor='var(--accent)';" 
+             ondragleave="event.currentTarget.style.borderColor='var(--border)';">
+          <input type="file" id="data-file" name="file" accept=".csv,.xlsx,.xls,.json,.tsv" 
+                 style="display:none;" onchange="handleFileSelect(event)">
+          <div style="font-size:48px;margin-bottom:12px;">📁</div>
+          <p style="margin:0 0 12px;color:var(--muted);">Drag and drop a file here, or</p>
+          <button type="button" class="btn" onclick="document.getElementById('data-file').click()">Browse Files</button>
+          <div id="file-info" style="margin-top:16px;display:none;">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+              <span style="font-weight:500;" id="file-name"></span>
+              <button type="button" onclick="clearFileSelection()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;">✕</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="file-size"></div>
+          </div>
+        </div>
       </div>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px;">
+        <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">Or paste CSV content:</p>
+        <textarea id="csv-text" rows="8" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;font-size:13px;" 
+                  placeholder="Paste your CSV content here (alternative to file upload)..."></textarea>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
         <div class="form-group">
-          <label style="display:block;margin-bottom:8px;font-weight:500;">Delimiter</label>
-          <input type="text" id="delimiter" value="," maxlength="1" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+          <label style="display:block;margin-bottom:8px;font-weight:500;">Delimiter (CSV/TSV)</label>
+          <input type="text" id="delimiter" name="delimiter" value="," maxlength="1" 
+                 style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
         </div>
         <div class="form-group">
-          <label style="display:flex;align-items:center;gap:8px;margin-top:32px;">
-            <input type="checkbox" id="normalize-headers" checked>
-            <span>Normalize Headers</span>
-          </label>
+          <label style="display:block;margin-bottom:8px;font-weight:500;">File Type (optional)</label>
+          <select id="file-type" name="file_type" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);">
+            <option value="">Auto-detect</option>
+            <option value="csv">CSV</option>
+            <option value="excel">Excel</option>
+            <option value="json">JSON</option>
+            <option value="tsv">TSV</option>
+          </select>
         </div>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="normalize-headers" name="normalize_headers" checked>
+          <span>Normalize Headers</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="drop-empty-rows" name="drop_empty_rows" checked>
+          <span>Drop Empty Rows</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="apply-crm-mappings" name="apply_crm_mappings" checked>
+          <span>Apply CRM Mappings</span>
+        </label>
       </div>
       
       <button type="submit" class="btn primary" style="width:100%;">Clean Data</button>
@@ -2147,6 +2202,49 @@ function renderDataCleanInterface(container) {
     
     <div id="data-clean-result" style="margin-top:24px;display:none;"></div>
   `;
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    displayFileInfo(file);
+  }
+}
+
+function handleFileDrop(event) {
+  event.preventDefault();
+  event.currentTarget.style.borderColor = 'var(--border)';
+  const file = event.dataTransfer.files[0];
+  if (file) {
+    const fileInput = document.getElementById('data-file');
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    displayFileInfo(file);
+  }
+}
+
+function displayFileInfo(file) {
+  const fileInfo = document.getElementById('file-info');
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+  
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+  fileInfo.style.display = 'block';
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function clearFileSelection() {
+  document.getElementById('data-file').value = '';
+  document.getElementById('file-info').style.display = 'none';
 }
 
 function handleDataClean(event) {
@@ -2159,35 +2257,84 @@ function handleDataClean(event) {
   button.disabled = true;
   button.textContent = 'Processing...';
   
-  const data = {
-    csv_text: document.getElementById('csv-text').value,
-    delimiter: document.getElementById('delimiter').value || ',',
-    normalize_headers: document.getElementById('normalize-headers').checked,
-    drop_empty_rows: true
-  };
+  const fileInput = document.getElementById('data-file');
+  const file = fileInput.files[0];
+  const csvText = document.getElementById('csv-text').value;
+  
+  // Check if file or text was provided
+  if (!file && !csvText.trim()) {
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please upload a file or paste CSV content.</div>`;
+    button.disabled = false;
+    button.textContent = originalText;
+    return;
+  }
+  
+  const formData = new FormData();
+  
+  if (file) {
+    // File upload mode
+    formData.append('file', file);
+    formData.append('delimiter', document.getElementById('delimiter').value || ',');
+    formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
+    formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
+    formData.append('apply_crm_mappings', document.getElementById('apply-crm-mappings').checked);
+    const fileType = document.getElementById('file-type').value;
+    if (fileType) {
+      formData.append('file_type', fileType);
+    }
+  } else {
+    // Text mode (backward compatibility)
+    formData.append('csv_text', csvText);
+    formData.append('delimiter', document.getElementById('delimiter').value || ',');
+    formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
+    formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
+  }
   
   fetch(`${API_BASE_URL}/services/data-clean`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: file ? formData : JSON.stringify({
+      csv_text: csvText,
+      delimiter: document.getElementById('delimiter').value || ',',
+      normalize_headers: document.getElementById('normalize-headers').checked,
+      drop_empty_rows: document.getElementById('drop-empty-rows').checked
+    }),
+    headers: file ? {} : { 'Content-Type': 'application/json' }
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
       resultDiv.style.display = 'block';
+      const crmInfo = data.report.crm_detected ? 
+        `<div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <strong>CRM Detected:</strong> ${data.report.crm_detected.charAt(0).toUpperCase() + data.report.crm_detected.slice(1)}
+        </div>` : '';
+      
+      const fixesInfo = Object.entries(data.report.fixes)
+        .filter(([key, value]) => value > 0)
+        .map(([key, value]) => `<div><strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}</div>`)
+        .join('');
+      
       resultDiv.innerHTML = `
         <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
           <h3 style="margin:0 0 12px;color:#22c55e;">✅ Data Cleaned Successfully</h3>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px;">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px;margin-bottom:12px;">
             <div><strong>Rows:</strong> ${data.report.rows_in} → ${data.report.rows_out}</div>
             <div><strong>Columns:</strong> ${data.report.columns_in} → ${data.report.columns_out}</div>
+            <div><strong>File Type:</strong> ${data.report.file_type.toUpperCase()}</div>
+            <div><strong>Processing Time:</strong> ${new Date(data.report.finished_at).getTime() - new Date(data.report.started_at).getTime()}ms</div>
           </div>
+          ${crmInfo}
+          ${fixesInfo ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.2);"><strong>Fixes Applied:</strong><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">${fixesInfo}</div></div>` : ''}
         </div>
         <div style="margin-bottom:16px;">
-          <label style="display:block;margin-bottom:8px;font-weight:500;">Cleaned CSV:</label>
-          <textarea readonly rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);">${data.cleaned_csv}</textarea>
+          <label style="display:block;margin-bottom:8px;font-weight:500;">Cleaned Data (CSV):</label>
+          <textarea readonly rows="10" id="cleaned-csv-output" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);font-size:12px;">${data.cleaned_csv}</textarea>
         </div>
-        <button class="btn" onclick="downloadCSV('${data.cleaned_csv.replace(/'/g, "\\'")}', 'cleaned_data.csv')">Download Cleaned CSV</button>
+        <div style="display:flex;gap:12px;">
+          <button class="btn primary" onclick="downloadCSV('${data.cleaned_csv.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'cleaned_data.csv')">Download Cleaned CSV</button>
+          <button class="btn" onclick="copyToClipboard(document.getElementById('cleaned-csv-output').value)">Copy to Clipboard</button>
+        </div>
       `;
     } else {
       resultDiv.style.display = 'block';
@@ -2201,6 +2348,14 @@ function handleDataClean(event) {
   .finally(() => {
     button.disabled = false;
     button.textContent = originalText;
+  });
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copied to clipboard!');
+  }).catch(err => {
+    console.error('Failed to copy:', err);
   });
 }
 
