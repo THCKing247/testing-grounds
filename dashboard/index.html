@@ -66,6 +66,7 @@
       <section class="reveal" style="margin:32px 0;">
         <div class="dashboard-tabs">
           <button class="dashboard-tab active" data-tab="overview">📊 Overview</button>
+          <button class="dashboard-tab" data-tab="automation-services">🤖 Automation Services</button>
           <button class="dashboard-tab" data-tab="chats">💬 Chat Sessions</button>
           <button class="dashboard-tab" data-tab="usage">📈 Usage Reports</button>
           <button class="dashboard-tab" data-tab="billing">💳 Billing</button>
@@ -157,6 +158,24 @@
 
           <div class="usage-reports-container" id="usage-reports-container">
             <!-- Usage reports will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Automation Services Tab -->
+      <div class="dashboard-tab-content" id="tab-automation-services">
+        <section class="reveal" style="margin:32px 0;">
+          <div class="section-head">
+            <h2>Automation Services</h2>
+            <p>Access and manage your automation services. Each service is available separately for testing and functionality checks.</p>
+          </div>
+
+          <div class="automation-services-container" id="automation-services-container">
+            <!-- Automation services will be populated by JavaScript -->
+            <div style="text-align:center;padding:40px;color:var(--muted);">
+              <div style="font-size:48px;margin-bottom:16px;">⏳</div>
+              <p>Loading automation services...</p>
+            </div>
           </div>
         </section>
       </div>

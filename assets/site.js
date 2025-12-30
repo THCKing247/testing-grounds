@@ -1675,6 +1675,9 @@ function initDashboard() {
     }).join('');
   }
 
+  // Load automation services for overview
+  loadAutomationServicesForOverview();
+
   // Initialize tabs
   initDashboardTabs();
   
@@ -1954,17 +1957,363 @@ function renderBilling(clientData) {
   `;
 }
 
+// ============================================
+// AUTOMATION SERVICES
+// ============================================
+
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api'; // Update this to your API URL
+
+// Load automation services
+async function loadAutomationServices() {
+  const container = document.getElementById('automation-services-container');
+  if (!container) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/services`);
+    if (!response.ok) {
+      throw new Error('Failed to load services');
+    }
+    const data = await response.json();
+    renderAutomationServices(data.services);
+  } catch (error) {
+    console.error('Error loading automation services:', error);
+    container.innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+        <p><strong>Unable to connect to automation services API</strong></p>
+        <p style="font-size:14px;margin-top:8px;">Make sure the API server is running on ${API_BASE_URL}</p>
+        <button class="btn primary" onclick="loadAutomationServices()" style="margin-top:16px;">Retry</button>
+      </div>
+    `;
+  }
+}
+
+// Load automation services for overview section
+async function loadAutomationServicesForOverview() {
+  const servicesContainer = document.getElementById('services-container');
+  if (!servicesContainer) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/services`);
+    if (!response.ok) {
+      return; // Silently fail for overview
+    }
+    const data = await response.json();
+    if (data.services && data.services.length > 0) {
+      // Add automation services section to overview
+      const automationSection = document.createElement('div');
+      automationSection.style.cssText = 'margin-top:32px;padding-top:32px;border-top:1px solid var(--border);';
+      automationSection.innerHTML = `
+        <div style="margin-bottom:16px;">
+          <h3 style="margin:0 0 8px;font-size:20px;">🤖 Available Automation Services</h3>
+          <p style="margin:0;color:var(--muted);font-size:14px;">Access ${data.services.length} automation services to streamline your workflows</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+          ${data.services.slice(0, 6).map(service => `
+            <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;cursor:pointer;transition:all 0.2s;" 
+                 onclick="document.querySelector('[data-tab=\\'automation-services\\']').click();openServiceModal('${service.id}')"
+                 onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" 
+                 onmouseout="this.style.borderColor='var(--border)';this.style.transform='translateY(0)'">
+              <div style="font-size:32px;margin-bottom:8px;">${service.icon}</div>
+              <div style="font-weight:500;font-size:14px;margin-bottom:4px;">${service.name}</div>
+              <div style="font-size:12px;color:var(--muted);">${service.category}</div>
+            </div>
+          `).join('')}
+        </div>
+        ${data.services.length > 6 ? `
+          <div style="margin-top:16px;text-align:center;">
+            <button class="btn" onclick="document.querySelector('[data-tab=\\'automation-services\\']').click()">
+              View All ${data.services.length} Services →
+            </button>
+          </div>
+        ` : ''}
+      `;
+      servicesContainer.appendChild(automationSection);
+    }
+  } catch (error) {
+    // Silently fail for overview
+    console.error('Error loading automation services for overview:', error);
+  }
+}
+
+// Render automation services grid
+function renderAutomationServices(services) {
+  const container = document.getElementById('automation-services-container');
+  if (!container) return;
+
+  if (!services || services.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--muted);">No services available.</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="automation-services-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;">
+      ${services.map(service => `
+        <div class="automation-service-card" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:24px;transition:all 0.2s;cursor:pointer;" 
+             onclick="openServiceModal('${service.id}')" 
+             onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" 
+             onmouseout="this.style.borderColor='var(--border)';this.style.transform='translateY(0)'">
+          <div style="font-size:48px;margin-bottom:16px;">${service.icon}</div>
+          <h3 style="margin:0 0 8px;font-size:20px;">${service.name}</h3>
+          <p style="margin:0;color:var(--muted);font-size:14px;line-height:1.6;">${service.description}</p>
+          <div style="margin-top:16px;">
+            <span class="service-category" style="display:inline-block;padding:4px 12px;background:rgba(124,58,237,0.1);color:var(--accent);border-radius:12px;font-size:12px;text-transform:capitalize;">${service.category}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Open service modal
+function openServiceModal(serviceId) {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.className = 'service-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  
+  modal.innerHTML = `
+    <div class="service-modal-content" style="background:var(--card-bg);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
+      <button class="service-modal-close" onclick="this.closest('.service-modal').remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);z-index:10;">✕</button>
+      <div id="service-modal-body" style="padding:32px;">
+        <div style="text-align:center;padding:20px;">
+          <div class="spinner" style="border:3px solid var(--border);border-top:3px solid var(--accent);border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto;"></div>
+          <p style="margin-top:16px;color:var(--muted);">Loading service...</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Load service interface
+  loadServiceInterface(serviceId, modal.querySelector('#service-modal-body'));
+}
+
+// Load service interface based on service ID
+function loadServiceInterface(serviceId, container) {
+  const serviceInterfaces = {
+    'data-clean': renderDataCleanInterface,
+    'voice-of-customer': renderVoiceOfCustomerInterface,
+    'content-ops': renderContentOpsInterface,
+    'help-desk': renderHelpDeskInterface,
+    'reputation-review': renderReputationReviewInterface,
+    'missed-call': renderMissedCallInterface,
+    'speed-to-lead': renderSpeedToLeadInterface,
+    'agency-toolkit': renderAgencyToolkitInterface,
+    'custom-gpts': renderCustomGPTsInterface,
+    'compliance-policy': renderCompliancePolicyInterface,
+    'vertical-lead-gen': renderVerticalLeadGenInterface,
+    'lead-followup': renderLeadFollowupInterface
+  };
+
+  const renderFunction = serviceInterfaces[serviceId];
+  if (renderFunction) {
+    renderFunction(container);
+  } else {
+    container.innerHTML = '<p>Service interface not available.</p>';
+  }
+}
+
+// Service Interface Renderers
+function renderDataCleanInterface(container) {
+  container.innerHTML = `
+    <h2 style="margin:0 0 24px;font-size:28px;">🧹 Data Clean Engine</h2>
+    <p style="color:var(--muted);margin-bottom:24px;">Cleans, standardizes, and fixes messy CSV/Excel files.</p>
+    
+    <form id="data-clean-form" onsubmit="handleDataClean(event)">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label style="display:block;margin-bottom:8px;font-weight:500;">CSV Content</label>
+        <textarea id="csv-text" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;" 
+                  placeholder="Paste your CSV content here..." required></textarea>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="form-group">
+          <label style="display:block;margin-bottom:8px;font-weight:500;">Delimiter</label>
+          <input type="text" id="delimiter" value="," maxlength="1" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;margin-top:32px;">
+            <input type="checkbox" id="normalize-headers" checked>
+            <span>Normalize Headers</span>
+          </label>
+        </div>
+      </div>
+      
+      <button type="submit" class="btn primary" style="width:100%;">Clean Data</button>
+    </form>
+    
+    <div id="data-clean-result" style="margin-top:24px;display:none;"></div>
+  `;
+}
+
+function handleDataClean(event) {
+  event.preventDefault();
+  const form = event.target;
+  const resultDiv = document.getElementById('data-clean-result');
+  const button = form.querySelector('button[type="submit"]');
+  
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Processing...';
+  
+  const data = {
+    csv_text: document.getElementById('csv-text').value,
+    delimiter: document.getElementById('delimiter').value || ',',
+    normalize_headers: document.getElementById('normalize-headers').checked,
+    drop_empty_rows: true
+  };
+  
+  fetch(`${API_BASE_URL}/services/data-clean`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+          <h3 style="margin:0 0 12px;color:#22c55e;">✅ Data Cleaned Successfully</h3>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px;">
+            <div><strong>Rows:</strong> ${data.report.rows_in} → ${data.report.rows_out}</div>
+            <div><strong>Columns:</strong> ${data.report.columns_in} → ${data.report.columns_out}</div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:8px;font-weight:500;">Cleaned CSV:</label>
+          <textarea readonly rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);">${data.cleaned_csv}</textarea>
+        </div>
+        <button class="btn" onclick="downloadCSV('${data.cleaned_csv.replace(/'/g, "\\'")}', 'cleaned_data.csv')">Download Cleaned CSV</button>
+      `;
+    } else {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${data.error}</div>`;
+    }
+  })
+  .catch(error => {
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${error.message}</div>`;
+  })
+  .finally(() => {
+    button.disabled = false;
+    button.textContent = originalText;
+  });
+}
+
+function downloadCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+// Add spinner animation
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+
+// Simplified interfaces for other services (can be expanded later)
+function renderVoiceOfCustomerInterface(container) {
+  container.innerHTML = `
+    <h2 style="margin:0 0 24px;font-size:28px;">🎤 Voice of Customer</h2>
+    <p style="color:var(--muted);margin-bottom:24px;">Analyze customer call transcripts to extract insights, sentiment, and summaries.</p>
+    <form onsubmit="handleVoiceOfCustomer(event)">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label style="display:block;margin-bottom:8px;font-weight:500;">Transcript Text</label>
+        <textarea id="transcript-text" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;" required></textarea>
+      </div>
+      <button type="submit" class="btn primary" style="width:100%;">Analyze Transcript</button>
+    </form>
+    <div id="voc-result" style="margin-top:24px;"></div>
+  `;
+}
+
+function handleVoiceOfCustomer(event) {
+  event.preventDefault();
+  const resultDiv = document.getElementById('voc-result');
+  const button = event.target.querySelector('button[type="submit"]');
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Analyzing...';
+  
+  fetch(`${API_BASE_URL}/services/voice-of-customer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      transcript_text: document.getElementById('transcript-text').value,
+      max_summary_sentences: 6
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      resultDiv.innerHTML = `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:20px;margin-top:16px;">
+          <h3 style="margin:0 0 16px;">Summary</h3>
+          <p style="margin-bottom:16px;">${data.result.summary}</p>
+          <h4 style="margin:16px 0 8px;">Sentiment</h4>
+          <p>Label: <strong>${data.result.sentiment.label}</strong> (Score: ${data.result.sentiment.score})</p>
+        </div>
+      `;
+    } else {
+      resultDiv.innerHTML = `<div style="color:#ef4444;margin-top:16px;">Error: ${data.error}</div>`;
+    }
+  })
+  .catch(error => {
+    resultDiv.innerHTML = `<div style="color:#ef4444;margin-top:16px;">Error: ${error.message}</div>`;
+  })
+  .finally(() => {
+    button.disabled = false;
+    button.textContent = originalText;
+  });
+}
+
+// Placeholder interfaces for other services
+const renderContentOpsInterface = (c) => c.innerHTML = '<h2>✍️ AI Content Operations</h2><p>Service interface coming soon...</p>';
+const renderHelpDeskInterface = (c) => c.innerHTML = '<h2>🆘 AI Help Desk</h2><p>Service interface coming soon...</p>';
+const renderReputationReviewInterface = (c) => c.innerHTML = '<h2>⭐ Reputation Review Automation</h2><p>Service interface coming soon...</p>';
+const renderMissedCallInterface = (c) => c.innerHTML = '<h2>📞 Missed Call Automation</h2><p>Service interface coming soon...</p>';
+const renderSpeedToLeadInterface = (c) => c.innerHTML = '<h2>⚡ Speed to Lead Automation</h2><p>Service interface coming soon...</p>';
+const renderAgencyToolkitInterface = (c) => c.innerHTML = '<h2>🛠️ AI Automation Agency Toolkit</h2><p>Service interface coming soon...</p>';
+const renderCustomGPTsInterface = (c) => c.innerHTML = '<h2>🤖 Custom GPTs for Teams</h2><p>Service interface coming soon...</p>';
+const renderCompliancePolicyInterface = (c) => c.innerHTML = '<h2>📋 Compliance Policy Generator</h2><p>Service interface coming soon...</p>';
+const renderVerticalLeadGenInterface = (c) => c.innerHTML = '<h2>🎯 Vertical Lead Generation</h2><p>Service interface coming soon...</p>';
+const renderLeadFollowupInterface = (c) => c.innerHTML = '<h2>💬 AI Lead Follow-up & Nurture</h2><p>Service interface coming soon...</p>';
+
+// Initialize automation services when dashboard loads
+function initAutomationServices() {
+  const automationTab = document.getElementById('tab-automation-services');
+  if (automationTab) {
+    // Load services when tab is clicked
+    const tabButton = document.querySelector('[data-tab="automation-services"]');
+    if (tabButton) {
+      tabButton.addEventListener('click', () => {
+        setTimeout(loadAutomationServices, 100);
+      });
+    }
+  }
+}
+
 // Initialize on page load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     updateNavigation();
     if (window.location.pathname.includes('/dashboard/')) {
       initDashboard();
+      initAutomationServices();
     }
   });
 } else {
   updateNavigation();
   if (window.location.pathname.includes('/dashboard/')) {
     initDashboard();
+    initAutomationServices();
   }
 }
