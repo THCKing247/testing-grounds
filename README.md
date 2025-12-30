@@ -2,7 +2,7 @@
 Official website for Apex Technical Solutions Group LLC. Built using GitHub Pages to showcase services, projects, and future SaaS offerings.
 
 ## AI Chatbot Setup (Ollama)
-///
+
 The website includes an AI-powered chatbot that uses Ollama (local AI models). To enable AI responses:
 
 ### Prerequisites
