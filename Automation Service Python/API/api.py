@@ -20,10 +20,14 @@ def load_service(module_name, class_name):
     file_path = os.path.join(parent_dir, module_name)
     if not os.path.exists(file_path):
         raise ImportError(f"Service file not found: {file_path}")
-    spec = importlib.util.spec_from_file_location(module_name.replace('.py', '').replace('_', ''), file_path)
+    # Create a valid module name (Python modules can't start with numbers)
+    valid_name = f"service_{module_name.replace('.py', '').replace('_', '')}"
+    spec = importlib.util.spec_from_file_location(valid_name, file_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load spec for {module_name}")
     module = importlib.util.module_from_spec(spec)
+    # Register the module in sys.modules so imports work correctly
+    sys.modules[valid_name] = module
     spec.loader.exec_module(module)
     if not hasattr(module, class_name):
         raise ImportError(f"Class {class_name} not found in {module_name}")
