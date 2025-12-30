@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4961344406816399"
+     crossorigin="anonymous"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Client Dashboard | Apex Technical Solutions Group LLC</title>
+  <meta name="description" content="View your services and reports in your client dashboard." />
+  <link rel="canonical" href="https://apextsgroup.com/dashboard/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://apextsgroup.com/dashboard/" />
+  <meta property="og:title" content="Client Dashboard | Apex Technical Solutions Group LLC" />
+  <meta property="og:description" content="View your services and reports in your client dashboard." />
+  <meta property="og:image" content="https://apextsgroup.com/assets/logo.png" />
+  <meta property="twitter:card" content="summary" />
+  <meta property="twitter:title" content="Client Dashboard | Apex Technical Solutions Group LLC" />
+  <meta property="twitter:description" content="View your services and reports in your client dashboard." />
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="bg-animated" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <canvas id="particles"></canvas>
+  </div>
+
+  <div class="wrap">
+    <header class="site-header reveal">
+      <a class="brand-link" href="/">
+        <img class="brand-logo" src="/assets/logo.png" alt="Apex Technical Solutions Group LLC logo" loading="lazy">
+        <span class="brand-name">Apex Technical Solutions Group LLC</span>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a href="/">Home</a>
+        <a href="/services/">Services</a>
+        <a href="/about/">About</a>
+        <a href="/resources/">Resources</a>
+        <a href="/contact/">Contact</a>
+        <a href="/dashboard/" class="active">Dashboard</a>
+      </nav>
+      <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+    </header>
+
+    <main id="main-content">
+      <nav class="breadcrumbs reveal" aria-label="Breadcrumb">
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;">
+          <li><a href="/">Home</a></li>
+          <li class="current">Dashboard</li>
+        </ul>
+      </nav>
+
+      <section class="reveal">
+        <div class="dashboard-header">
+          <div>
+            <h1 style="margin:0 0 8px;font-size:38px;letter-spacing:-.6px;">Welcome back, <span id="client-name">Client</span></h1>
+            <p style="margin:0;color:var(--muted);font-size:16px;">Here's an overview of your services and recent activity.</p>
+          </div>
+          <button class="btn primary" onclick="logout()" style="white-space:nowrap;">Sign Out</button>
+        </div>
+      </section>
+
+      <!-- Dashboard Tabs -->
+      <section class="reveal" style="margin:32px 0;">
+        <div class="dashboard-tabs">
+          <button class="dashboard-tab active" data-tab="overview">📊 Overview</button>
+          <button class="dashboard-tab" data-tab="chats">💬 Chat Sessions</button>
+          <button class="dashboard-tab" data-tab="usage">📈 Usage Reports</button>
+          <button class="dashboard-tab" data-tab="billing">💳 Billing</button>
+        </div>
+      </section>
+
+      <!-- Overview Tab -->
+      <div class="dashboard-tab-content active" id="tab-overview">
+        <!-- Quick Stats -->
+        <section class="reveal" style="margin:32px 0;">
+          <div class="dashboard-stats">
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-content">
+                <div class="stat-value" id="total-services">0</div>
+                <div class="stat-label">Active Services</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">✅</div>
+              <div class="stat-content">
+                <div class="stat-value" id="completed-projects">0</div>
+                <div class="stat-label">Completed Projects</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📈</div>
+              <div class="stat-content">
+                <div class="stat-value" id="uptime-percent">100%</div>
+                <div class="stat-label">System Uptime</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📅</div>
+              <div class="stat-content">
+                <div class="stat-value" id="last-update">Today</div>
+                <div class="stat-label">Last Update</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Active Services -->
+        <section class="reveal" style="margin:48px 0;">
+          <div class="section-head">
+            <h2>Your Services</h2>
+            <p>Overview of all active services and their current status.</p>
+          </div>
+
+          <div class="services-grid" id="services-container">
+            <!-- Services will be populated by JavaScript -->
+          </div>
+        </section>
+
+        <!-- Reports -->
+        <section class="reveal" style="margin:48px 0;">
+          <div class="section-head">
+            <h2>Recent Reports</h2>
+            <p>Summarized reports and analytics for your services.</p>
+          </div>
+
+          <div class="reports-grid" id="reports-container">
+            <!-- Reports will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Chat Sessions Tab -->
+      <div class="dashboard-tab-content" id="tab-chats">
+        <section class="reveal" style="margin:32px 0;">
+          <div class="section-head">
+            <h2>Chat Sessions</h2>
+            <p>View and manage customer chat conversations. Click on a session to view details or take over.</p>
+          </div>
+
+          <div class="chat-sessions-container" id="chat-sessions-container">
+            <!-- Chat sessions will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Usage Reports Tab -->
+      <div class="dashboard-tab-content" id="tab-usage">
+        <section class="reveal" style="margin:32px 0;">
+          <div class="section-head">
+            <h2>Usage Reports</h2>
+            <p>Detailed analytics and metrics for your chatbot usage.</p>
+          </div>
+
+          <div class="usage-reports-container" id="usage-reports-container">
+            <!-- Usage reports will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Billing Tab -->
+      <div class="dashboard-tab-content" id="tab-billing">
+        <section class="reveal" style="margin:32px 0;">
+          <div class="section-head">
+            <h2>Billing & Usage</h2>
+            <p>View your current usage, limits, and billing information.</p>
+          </div>
+
+          <div class="billing-container" id="billing-container">
+            <!-- Billing information will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Support -->
+      <section class="reveal" style="margin:48px 0;">
+        <div class="card" style="padding:32px;background:linear-gradient(135deg, rgba(124,58,237,.15), rgba(37,99,235,.1));border:2px solid rgba(124,58,237,.3);">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+            <div class="icon" style="font-size:48px;">💬</div>
+            <div>
+              <h3 style="margin:0 0 4px;font-size:24px;">Need Help?</h3>
+              <p style="margin:0;color:var(--muted);">Have questions or need support? We're here to help.</p>
+            </div>
+          </div>
+          <div class="btns" style="margin-top:20px;">
+            <a class="btn primary" href="/contact/">Contact Support</a>
+            <a class="btn" href="mailto:info@apextsgroup.com">Email Us</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Company</h4>
+          <nav class="footer-nav">
+            <a href="/about/">About Us</a>
+            <a href="/services/">Services</a>
+            <a href="/contact/">Contact</a>
+          </nav>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <nav class="footer-nav">
+            <a href="/resources/">Tools & Calculators</a>
+            <a href="/blog/">Blog</a>
+            <a href="/faq/">FAQ</a>
+          </nav>
+        </div>
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <nav class="footer-nav">
+            <a href="/privacy/">Privacy Policy</a>
+            <a href="/terms/">Terms of Service</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Apex Technical Solutions Group LLC. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/assets/site.js"></script>
+</body>
+</html>
+

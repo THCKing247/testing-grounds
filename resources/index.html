@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4961344406816399"
+     crossorigin="anonymous"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resources & Tools | Apex Technical Solutions Group LLC</title>
+  <meta name="description" content="Free tools and resources for web development, automation, and business growth." />
+  <link rel="canonical" href="https://apextsgroup.com/resources/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://apextsgroup.com/resources/" />
+  <meta property="og:title" content="Resources & Tools | Apex Technical Solutions Group LLC" />
+  <meta property="og:description" content="Free tools and resources for web development, automation, and business growth." />
+  <meta property="og:image" content="https://apextsgroup.com/assets/logo.png" />
+  <meta property="twitter:card" content="summary" />
+  <meta property="twitter:title" content="Resources & Tools | Apex Technical Solutions Group LLC" />
+  <meta property="twitter:description" content="Free tools and resources for web development, automation, and business growth." />
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="bg-animated" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <canvas id="particles"></canvas>
+  </div>
+
+  <div class="wrap">
+    <header class="site-header reveal">
+      <a class="brand-link" href="/">
+        <img class="brand-logo" src="/assets/logo.png" alt="Apex Technical Solutions Group LLC logo" loading="lazy">
+        <span class="brand-name">Apex Technical Solutions Group LLC</span>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a href="/">Home</a>
+        <a href="/services/">Services</a>
+        <a href="/about/">About</a>
+        <a href="/resources/">Resources</a>
+        <a href="/contact/">Contact</a>
+      </nav>
+      <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+    </header>
+
+    <main id="main-content">
+      <nav class="breadcrumbs reveal" aria-label="Breadcrumb">
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;">
+          <li><a href="/">Home</a></li>
+          <li class="current">Resources</li>
+        </ul>
+      </nav>
+
+      <section class="reveal">
+        <h1 style="margin:0 0 8px;font-size:38px;letter-spacing:-.6px;">Resources & Tools</h1>
+        <p style="margin:0 0 32px;max-width:95ch;line-height:1.75;color:var(--muted);font-size:16px;">
+          Free calculators and tools to help you plan your projects, estimate costs, and make informed decisions about your technology investments.
+        </p>
+      </section>
+
+      <section class="grid" style="grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:32px;margin:48px 0;">
+        <!-- ROI Calculator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">💰</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">ROI Calculator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Calculate the return on investment for automation and web development projects.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="roi-investment">Initial Investment ($)</label>
+              <input type="number" id="roi-investment" placeholder="10000" min="0" step="100">
+            </div>
+            <div class="form-group">
+              <label for="roi-time-saved">Hours Saved Per Month</label>
+              <input type="number" id="roi-time-saved" placeholder="40" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="roi-hourly-rate">Hourly Rate ($)</label>
+              <input type="number" id="roi-hourly-rate" placeholder="50" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="roi-months">Time Period (Months)</label>
+              <input type="number" id="roi-months" placeholder="12" min="1" step="1" value="12">
+            </div>
+            <button class="btn primary" onclick="calculateROI()" style="width:100%;margin-top:16px;">Calculate ROI</button>
+            <div id="roi-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Results</h4>
+              <div id="roi-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Timeline Estimator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">📅</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Project Timeline Estimator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Estimate how long your web development or automation project will take.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="timeline-pages">Number of Pages/Features</label>
+              <input type="number" id="timeline-pages" placeholder="10" min="1" step="1">
+            </div>
+            <div class="form-group">
+              <label for="timeline-complexity">Complexity Level</label>
+              <select id="timeline-complexity" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+                <option value="simple">Simple</option>
+                <option value="medium" selected>Medium</option>
+                <option value="complex">Complex</option>
+                <option value="very-complex">Very Complex</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="timeline-integrations">Number of Integrations</label>
+              <input type="number" id="timeline-integrations" placeholder="3" min="0" step="1" value="0">
+            </div>
+            <button class="btn primary" onclick="calculateTimeline()" style="width:100%;margin-top:16px;">Estimate Timeline</button>
+            <div id="timeline-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Estimated Timeline</h4>
+              <div id="timeline-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Savings Calculator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">💵</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Automation Savings Calculator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Calculate potential cost savings from automating repetitive tasks.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="savings-tasks">Tasks Performed Per Week</label>
+              <input type="number" id="savings-tasks" placeholder="20" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="savings-time">Minutes Per Task</label>
+              <input type="number" id="savings-time" placeholder="15" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="savings-rate">Hourly Rate ($)</label>
+              <input type="number" id="savings-rate" placeholder="50" min="0" step="1">
+            </div>
+            <button class="btn primary" onclick="calculateSavings()" style="width:100%;margin-top:16px;">Calculate Savings</button>
+            <div id="savings-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Potential Savings</h4>
+              <div id="savings-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Development Cost Estimator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">💻</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Development Cost Estimator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Estimate the cost of your web development or automation project.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="cost-pages">Number of Pages/Features</label>
+              <input type="number" id="cost-pages" placeholder="10" min="1" step="1">
+            </div>
+            <div class="form-group">
+              <label for="cost-complexity">Complexity Level</label>
+              <select id="cost-complexity" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+                <option value="simple">Simple</option>
+                <option value="medium" selected>Medium</option>
+                <option value="complex">Complex</option>
+                <option value="very-complex">Very Complex</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cost-integrations">Number of Integrations</label>
+              <input type="number" id="cost-integrations" placeholder="3" min="0" step="1" value="0">
+            </div>
+            <div class="form-group">
+              <label for="cost-type">Project Type</label>
+              <select id="cost-type" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+                <option value="website">Website/Landing Page</option>
+                <option value="webapp" selected>Web Application</option>
+                <option value="automation">Automation/Integration</option>
+                <option value="consulting">Consulting</option>
+              </select>
+            </div>
+            <button class="btn primary" onclick="calculateCost()" style="width:100%;margin-top:16px;">Estimate Cost</button>
+            <div id="cost-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Estimated Cost Range</h4>
+              <div id="cost-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Website Performance Calculator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">⚡</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Website Performance Calculator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Estimate the impact of website performance improvements on user experience and conversions.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="perf-load-time">Current Load Time (seconds)</label>
+              <input type="number" id="perf-load-time" placeholder="3.5" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label for="perf-visitors">Monthly Visitors</label>
+              <input type="number" id="perf-visitors" placeholder="10000" min="0" step="100">
+            </div>
+            <div class="form-group">
+              <label for="perf-conversion-rate">Current Conversion Rate (%)</label>
+              <input type="number" id="perf-conversion-rate" placeholder="2.5" min="0" max="100" step="0.1">
+            </div>
+            <div class="form-group">
+              <label for="perf-avg-order">Average Order Value ($)</label>
+              <input type="number" id="perf-avg-order" placeholder="100" min="0" step="1">
+            </div>
+            <button class="btn primary" onclick="calculatePerformance()" style="width:100%;margin-top:16px;">Calculate Impact</button>
+            <div id="perf-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Performance Impact</h4>
+              <div id="perf-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversion Rate Impact Calculator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">📈</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Conversion Rate Impact Calculator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Calculate the revenue impact of improving your website's conversion rate.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="conv-visitors">Monthly Visitors</label>
+              <input type="number" id="conv-visitors" placeholder="10000" min="0" step="100">
+            </div>
+            <div class="form-group">
+              <label for="conv-current-rate">Current Conversion Rate (%)</label>
+              <input type="number" id="conv-current-rate" placeholder="2.0" min="0" max="100" step="0.1">
+            </div>
+            <div class="form-group">
+              <label for="conv-improved-rate">Improved Conversion Rate (%)</label>
+              <input type="number" id="conv-improved-rate" placeholder="3.0" min="0" max="100" step="0.1">
+            </div>
+            <div class="form-group">
+              <label for="conv-avg-value">Average Value Per Conversion ($)</label>
+              <input type="number" id="conv-avg-value" placeholder="150" min="0" step="1">
+            </div>
+            <button class="btn primary" onclick="calculateConversion()" style="width:100%;margin-top:16px;">Calculate Impact</button>
+            <div id="conv-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Revenue Impact</h4>
+              <div id="conv-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hosting Cost Calculator -->
+        <div class="card reveal" style="padding:32px;">
+          <div class="icon" style="font-size:48px;margin-bottom:16px;">🌐</div>
+          <h3 style="margin:0 0 12px;font-size:24px;">Hosting Cost Calculator</h3>
+          <p style="margin:0 0 24px;color:var(--muted);line-height:1.6;">
+            Estimate monthly hosting costs based on your website's traffic and requirements.
+          </p>
+          <div class="calculator-form">
+            <div class="form-group">
+              <label for="host-visitors">Monthly Visitors</label>
+              <input type="number" id="host-visitors" placeholder="10000" min="0" step="100">
+            </div>
+            <div class="form-group">
+              <label for="host-storage">Storage Needed (GB)</label>
+              <input type="number" id="host-storage" placeholder="10" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="host-bandwidth">Bandwidth Needed (GB/month)</label>
+              <input type="number" id="host-bandwidth" placeholder="50" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="host-features">Required Features</label>
+              <select id="host-features" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+                <option value="basic">Basic (Static Site)</option>
+                <option value="standard" selected>Standard (CMS/Blog)</option>
+                <option value="advanced">Advanced (E-commerce)</option>
+                <option value="enterprise">Enterprise (High Traffic)</option>
+              </select>
+            </div>
+            <button class="btn primary" onclick="calculateHosting()" style="width:100%;margin-top:16px;">Estimate Cost</button>
+            <div id="host-result" class="calculator-result" style="display:none;margin-top:24px;padding:20px;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.2);">
+              <h4 style="margin:0 0 12px;font-size:18px;">Estimated Monthly Cost</h4>
+              <div id="host-output"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="reveal">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>Apex Technical Solutions Group LLC</h3>
+            <p>Building modern technology solutions for businesses that scale.</p>
+          </div>
+          <div class="footer-section">
+            <h4>Quick Links</h4>
+            <nav class="footer-nav">
+              <a href="/">Home</a>
+              <a href="/services/">Services</a>
+              <a href="/about/">About</a>
+            </nav>
+          </div>
+          <div class="footer-section">
+            <h4>Resources</h4>
+            <nav class="footer-nav">
+              <a href="/process/">Process</a>
+              <a href="/pricing/">Pricing</a>
+              <a href="/contact/">Contact</a>
+            </nav>
+          </div>
+          <div class="footer-section">
+            <h4>More</h4>
+            <nav class="footer-nav">
+              <a href="/faq/">FAQ</a>
+              <a href="/blog/">Blog</a>
+              <a href="/privacy/">Privacy</a>
+            </nav>
+          </div>
+          <div class="footer-section">
+            <h4>Contact</h4>
+            <p><a href="mailto:info@apextsgroup.com">info@apextsgroup.com</a></p>
+          </div>
+        </div>
+        <div class="newsletter-signup" style="margin-top:48px;">
+          <h3>Stay Updated</h3>
+          <p>Get the latest insights on web development, automation, and technology trends.</p>
+          <form class="newsletter-form">
+            <input type="email" placeholder="Enter your email" required aria-label="Email address">
+            <button type="submit">Subscribe</button>
+          </form>
+        </div>
+        <div class="footer-bottom">
+          <div>© 2025 Apex Technical Solutions Group LLC. All rights reserved.</div>
+        </div>
+      </footer>
+      
+      <!-- Chatbot Widget -->
+      <div class="chatbot-widget" id="chatbotWidget">
+        <div class="chatbot-header" id="chatbotHeader">
+          <div class="chatbot-header-content">
+            <div class="chatbot-avatar">🤖</div>
+            <div>
+              <div class="chatbot-name">Apex Assistant</div>
+              <div class="chatbot-status">Online</div>
+            </div>
+          </div>
+          <button class="chatbot-close" id="chatbotClose" aria-label="Close chat">×</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+          <div class="chatbot-message bot-message">
+            <div class="message-content">
+              <p>Hi! I'm here to help you with any questions about our services, pricing, or how we can help your business. What would you like to know?</p>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-quick-replies" id="chatbotQuickReplies">
+          <button class="quick-reply-btn" data-question="What services do you offer?">Services</button>
+          <button class="quick-reply-btn" data-question="How much do projects cost?">Pricing</button>
+          <button class="quick-reply-btn" data-question="How long do projects take?">Timeline</button>
+          <button class="quick-reply-btn" data-question="How can I contact you?">Contact</button>
+        </div>
+        <div class="chatbot-input-container">
+          <input 
+            type="text" 
+            class="chatbot-input" 
+            id="chatbotInput" 
+            placeholder="Type your question..."
+            aria-label="Chat input"
+          >
+          <button class="chatbot-send" id="chatbotSend" aria-label="Send message">➤</button>
+        </div>
+      </div>
+      <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open chat">
+        <span class="chatbot-toggle-icon">💬</span>
+        <span class="chatbot-toggle-text">Need Help?</span>
+      </button>
+    </main>
+  </div>
+
+  <script src="/assets/site.js"></script>
+  <script>
+    // ROI Calculator
+    function calculateROI() {
+      const investment = parseFloat(document.getElementById('roi-investment').value) || 0;
+      const timeSaved = parseFloat(document.getElementById('roi-time-saved').value) || 0;
+      const hourlyRate = parseFloat(document.getElementById('roi-hourly-rate').value) || 0;
+      const months = parseFloat(document.getElementById('roi-months').value) || 12;
+
+      if (investment === 0 || timeSaved === 0 || hourlyRate === 0) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const monthlySavings = timeSaved * hourlyRate;
+      const totalSavings = monthlySavings * months;
+      const netSavings = totalSavings - investment;
+      const roi = ((netSavings / investment) * 100).toFixed(1);
+      const paybackMonths = Math.ceil(investment / monthlySavings);
+
+      const result = document.getElementById('roi-result');
+      const output = document.getElementById('roi-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Monthly Savings:</strong> $${monthlySavings.toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Total Savings (${months} months):</strong> $${totalSavings.toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Net Savings:</strong> $${netSavings.toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>ROI:</strong> ${roi}%</div>
+        <div><strong>Payback Period:</strong> ${paybackMonths} months</div>
+      `;
+      
+      result.style.display = 'block';
+    }
+
+    // Timeline Estimator
+    function calculateTimeline() {
+      const pages = parseFloat(document.getElementById('timeline-pages').value) || 0;
+      const complexity = document.getElementById('timeline-complexity').value;
+      const integrations = parseFloat(document.getElementById('timeline-integrations').value) || 0;
+
+      if (pages === 0) {
+        alert('Please enter the number of pages/features');
+        return;
+      }
+
+      const complexityMultiplier = {
+        'simple': 0.5,
+        'medium': 1,
+        'complex': 1.5,
+        'very-complex': 2.5
+      };
+
+      const baseDays = pages * 2;
+      const complexityDays = baseDays * complexityMultiplier[complexity];
+      const integrationDays = integrations * 3;
+      const totalDays = complexityDays + integrationDays;
+      const weeks = Math.ceil(totalDays / 5);
+      const months = (weeks / 4).toFixed(1);
+
+      const result = document.getElementById('timeline-result');
+      const output = document.getElementById('timeline-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Estimated Days:</strong> ${Math.ceil(totalDays)} days</div>
+        <div style="margin-bottom:12px;"><strong>Estimated Weeks:</strong> ${weeks} weeks</div>
+        <div><strong>Estimated Months:</strong> ${months} months</div>
+        <p style="margin-top:16px;font-size:14px;color:var(--muted);">* Estimates are approximate and may vary based on specific requirements.</p>
+      `;
+      
+      result.style.display = 'block';
+    }
+
+    // Savings Calculator
+    function calculateSavings() {
+      const tasks = parseFloat(document.getElementById('savings-tasks').value) || 0;
+      const timePerTask = parseFloat(document.getElementById('savings-time').value) || 0;
+      const rate = parseFloat(document.getElementById('savings-rate').value) || 0;
+
+      if (tasks === 0 || timePerTask === 0 || rate === 0) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const hoursPerWeek = (tasks * timePerTask) / 60;
+      const weeklySavings = hoursPerWeek * rate;
+      const monthlySavings = weeklySavings * 4.33;
+      const yearlySavings = monthlySavings * 12;
+
+      const result = document.getElementById('savings-result');
+      const output = document.getElementById('savings-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Hours Saved Per Week:</strong> ${hoursPerWeek.toFixed(1)} hours</div>
+        <div style="margin-bottom:12px;"><strong>Weekly Savings:</strong> $${weeklySavings.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Monthly Savings:</strong> $${monthlySavings.toFixed(2)}</div>
+        <div><strong>Yearly Savings:</strong> $${yearlySavings.toFixed(2)}</div>
+      `;
+      
+      result.style.display = 'block';
+    }
+
+    // Development Cost Estimator
+    function calculateCost() {
+      const pages = parseFloat(document.getElementById('cost-pages').value) || 0;
+      const complexity = document.getElementById('cost-complexity').value;
+      const integrations = parseFloat(document.getElementById('cost-integrations').value) || 0;
+      const type = document.getElementById('cost-type').value;
+
+      if (pages === 0) {
+        alert('Please enter the number of pages/features');
+        return;
+      }
+
+      const complexityMultiplier = {
+        'simple': 0.6,
+        'medium': 1,
+        'complex': 1.8,
+        'very-complex': 3
+      };
+
+      const typeBaseRates = {
+        'website': { base: 200, perPage: 150 },
+        'webapp': { base: 5000, perPage: 400 },
+        'automation': { base: 1500, perPage: 200 },
+        'consulting': { base: 2000, perPage: 100 }
+      };
+
+      const baseCost = typeBaseRates[type].base;
+      const perPageCost = typeBaseRates[type].perPage;
+      const pageCost = pages * perPageCost;
+      const complexityCost = pageCost * complexityMultiplier[complexity];
+      const integrationCost = integrations * 800;
+      const totalCost = baseCost + complexityCost + integrationCost;
+      const lowEstimate = totalCost * 0.8;
+      const highEstimate = totalCost * 1.3;
+
+      const result = document.getElementById('cost-result');
+      const output = document.getElementById('cost-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Estimated Range:</strong> $${Math.round(lowEstimate).toLocaleString()} - $${Math.round(highEstimate).toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Base Cost:</strong> $${baseCost.toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Pages/Features:</strong> $${Math.round(pageCost).toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Complexity Factor:</strong> $${Math.round(complexityCost - pageCost).toLocaleString()}</div>
+        <div style="margin-bottom:12px;"><strong>Integrations:</strong> $${Math.round(integrationCost).toLocaleString()}</div>
+        <p style="margin-top:16px;font-size:14px;color:var(--muted);">* Estimates are approximate. Contact us for a detailed quote.</p>
+      `;
+      
+      result.style.display = 'block';
+    }
+
+    // Website Performance Calculator
+    function calculatePerformance() {
+      const loadTime = parseFloat(document.getElementById('perf-load-time').value) || 0;
+      const visitors = parseFloat(document.getElementById('perf-visitors').value) || 0;
+      const conversionRate = parseFloat(document.getElementById('perf-conversion-rate').value) || 0;
+      const avgOrder = parseFloat(document.getElementById('perf-avg-order').value) || 0;
+
+      if (loadTime === 0 || visitors === 0 || conversionRate === 0 || avgOrder === 0) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      // Research shows 1 second delay = 7% reduction in conversions
+      // Ideal load time is under 2 seconds
+      const idealLoadTime = 2;
+      const delaySeconds = Math.max(0, loadTime - idealLoadTime);
+      
+      // Calculate conversion loss percentage (7% per second of delay)
+      const conversionLossPercent = delaySeconds * 7; // 7% per second
+      
+      // Current conversions (with slow load time penalty)
+      const currentConversions = visitors * (conversionRate / 100);
+      const currentRevenue = currentConversions * avgOrder;
+      
+      // Improved conversion rate if we speed up to ideal (remove the penalty)
+      const improvedRate = conversionRate + (conversionLossPercent);
+      const improvedConversions = visitors * (improvedRate / 100);
+      const improvedRevenue = improvedConversions * avgOrder;
+      
+      // Calculate the gain
+      const additionalConversions = improvedConversions - currentConversions;
+      const additionalRevenue = improvedRevenue - currentRevenue;
+      const yearlyAdditionalRevenue = additionalRevenue * 12;
+      const improvementPercent = delaySeconds > 0 ? ((improvedRate / conversionRate - 1) * 100) : 0;
+
+      const result = document.getElementById('perf-result');
+      const output = document.getElementById('perf-output');
+      
+      if (delaySeconds <= 0) {
+        output.innerHTML = `
+          <div style="margin-bottom:12px;color:var(--accent);"><strong>✓ Your site is already fast!</strong></div>
+          <div style="margin-bottom:12px;"><strong>Current Load Time:</strong> ${loadTime.toFixed(1)}s (under 2s ideal)</div>
+          <div style="margin-bottom:12px;"><strong>Current Conversions:</strong> ${currentConversions.toFixed(0)} per month</div>
+          <div style="margin-bottom:12px;"><strong>Current Monthly Revenue:</strong> $${currentRevenue.toFixed(2)}</div>
+          <p style="margin-top:16px;font-size:14px;color:var(--muted);">* Your site is performing well. Keep it optimized!</p>
+        `;
+      } else {
+        output.innerHTML = `
+          <div style="margin-bottom:12px;"><strong>Current Load Time:</strong> ${loadTime.toFixed(1)}s (${delaySeconds.toFixed(1)}s slower than ideal)</div>
+          <div style="margin-bottom:12px;"><strong>Current Conversions:</strong> ${currentConversions.toFixed(0)} per month</div>
+          <div style="margin-bottom:12px;"><strong>Current Monthly Revenue:</strong> $${currentRevenue.toFixed(2)}</div>
+          <div style="margin-bottom:12px;color:var(--accent);"><strong>Potential Conversions (faster site):</strong> ${improvedConversions.toFixed(0)} per month</div>
+          <div style="margin-bottom:12px;color:var(--accent);"><strong>Potential Monthly Revenue:</strong> $${improvedRevenue.toFixed(2)}</div>
+          <div style="margin-bottom:12px;"><strong>Additional Conversions:</strong> +${additionalConversions.toFixed(0)} per month (${improvementPercent.toFixed(1)}% improvement)</div>
+          <div style="margin-bottom:12px;"><strong>Additional Monthly Revenue:</strong> $${additionalRevenue.toFixed(2)}</div>
+          <div><strong>Additional Yearly Revenue:</strong> $${yearlyAdditionalRevenue.toFixed(2)}</div>
+          <p style="margin-top:16px;font-size:14px;color:var(--muted);">* Based on industry research showing 7% conversion loss per second of delay over 2 seconds.</p>
+        `;
+      }
+      
+      result.style.display = 'block';
+    }
+
+    // Conversion Rate Impact Calculator
+    function calculateConversion() {
+      const visitors = parseFloat(document.getElementById('conv-visitors').value) || 0;
+      const currentRate = parseFloat(document.getElementById('conv-current-rate').value) || 0;
+      const improvedRate = parseFloat(document.getElementById('conv-improved-rate').value) || 0;
+      const avgValue = parseFloat(document.getElementById('conv-avg-value').value) || 0;
+
+      if (visitors === 0 || currentRate === 0 || improvedRate === 0 || avgValue === 0) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      if (improvedRate <= currentRate) {
+        alert('Improved conversion rate must be higher than current rate');
+        return;
+      }
+
+      const currentConversions = visitors * (currentRate / 100);
+      const improvedConversions = visitors * (improvedRate / 100);
+      const additionalConversions = improvedConversions - currentConversions;
+      const currentRevenue = currentConversions * avgValue;
+      const improvedRevenue = improvedConversions * avgValue;
+      const additionalRevenue = additionalConversions * avgValue;
+      const monthlyIncrease = (additionalRevenue / currentRevenue) * 100;
+      const yearlyAdditionalRevenue = additionalRevenue * 12;
+
+      const result = document.getElementById('conv-result');
+      const output = document.getElementById('conv-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Current Monthly Revenue:</strong> $${currentRevenue.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Improved Monthly Revenue:</strong> $${improvedRevenue.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Additional Monthly Revenue:</strong> $${additionalRevenue.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Revenue Increase:</strong> ${monthlyIncrease.toFixed(1)}%</div>
+        <div><strong>Additional Yearly Revenue:</strong> $${yearlyAdditionalRevenue.toFixed(2)}</div>
+      `;
+      
+      result.style.display = 'block';
+    }
+
+    // Hosting Cost Calculator
+    function calculateHosting() {
+      const visitors = parseFloat(document.getElementById('host-visitors').value) || 0;
+      const storage = parseFloat(document.getElementById('host-storage').value) || 0;
+      const bandwidth = parseFloat(document.getElementById('host-bandwidth').value) || 0;
+      const features = document.getElementById('host-features').value;
+
+      if (visitors === 0) {
+        alert('Please enter monthly visitors');
+        return;
+      }
+
+      const featureMultipliers = {
+        'basic': { base: 5, storage: 0.1, bandwidth: 0.05 },
+        'standard': { base: 15, storage: 0.2, bandwidth: 0.1 },
+        'advanced': { base: 50, storage: 0.5, bandwidth: 0.2 },
+        'enterprise': { base: 200, storage: 1, bandwidth: 0.5 }
+      };
+
+      const multiplier = featureMultipliers[features];
+      const baseCost = multiplier.base;
+      const storageCost = storage * multiplier.storage;
+      const bandwidthCost = bandwidth * multiplier.bandwidth;
+      
+      // Traffic-based scaling
+      let trafficCost = 0;
+      if (visitors > 100000) trafficCost = 50;
+      else if (visitors > 50000) trafficCost = 25;
+      else if (visitors > 10000) trafficCost = 10;
+
+      const totalCost = baseCost + storageCost + bandwidthCost + trafficCost;
+      const lowEstimate = totalCost * 0.9;
+      const highEstimate = totalCost * 1.2;
+
+      const result = document.getElementById('host-result');
+      const output = document.getElementById('host-output');
+      
+      output.innerHTML = `
+        <div style="margin-bottom:12px;"><strong>Estimated Monthly Cost:</strong> $${Math.round(lowEstimate)} - $${Math.round(highEstimate)}</div>
+        <div style="margin-bottom:12px;"><strong>Base Plan:</strong> $${baseCost.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Storage (${storage}GB):</strong> $${storageCost.toFixed(2)}</div>
+        <div style="margin-bottom:12px;"><strong>Bandwidth (${bandwidth}GB):</strong> $${bandwidthCost.toFixed(2)}</div>
+        ${trafficCost > 0 ? `<div style="margin-bottom:12px;"><strong>Traffic Scaling:</strong> $${trafficCost.toFixed(2)}</div>` : ''}
+        <p style="margin-top:16px;font-size:14px;color:var(--muted);">* Costs vary by provider. Consider managed hosting for better performance.</p>
+      `;
+      
+      result.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
