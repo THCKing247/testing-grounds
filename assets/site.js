@@ -2231,29 +2231,6 @@ function renderDataCleanInterface(container) {
         </label>
       </div>
       
-      <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:16px;margin-bottom:20px;">
-        <h3 style="margin:0 0 12px;font-size:16px;color:#3b82f6;">📥 Export Formats</h3>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Select which formats you want to export (you can select multiple):</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
-            <input type="checkbox" id="export-csv" name="export_formats" value="csv" checked>
-            <span>📄 CSV</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
-            <input type="checkbox" id="export-json" name="export_formats" value="json" checked>
-            <span>📋 JSON</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
-            <input type="checkbox" id="export-excel" name="export_formats" value="excel" checked>
-            <span>📊 Excel</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
-            <input type="checkbox" id="export-columns" name="export_formats" value="columns">
-            <span>📑 Column Files</span>
-          </label>
-        </div>
-        <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">💡 Column Files: One file per column for data verification</p>
-      </div>
       
       <button type="button" id="process-files-btn" class="btn primary" style="width:100%;" onclick="processFileQueue()" disabled>Clean Data (0 files queued)</button>
     </form>
@@ -2343,34 +2320,60 @@ function updateFileQueueDisplay() {
                     onmouseout="this.style.color='var(--muted)'"
                     title="Remove from queue">✕</button>
           </div>
-          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:12px;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#3b82f6;">📥 Export Formats for this file:</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
-                <input type="checkbox" ${file.exportFormats.includes('csv') ? 'checked' : ''} 
-                       onchange="updateFileExportFormats(${index}, 'csv', this.checked)">
-                <span>📄 CSV</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
-                <input type="checkbox" ${file.exportFormats.includes('json') ? 'checked' : ''} 
-                       onchange="updateFileExportFormats(${index}, 'json', this.checked)">
-                <span>📋 JSON</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
-                <input type="checkbox" ${file.exportFormats.includes('excel') ? 'checked' : ''} 
-                       onchange="updateFileExportFormats(${index}, 'excel', this.checked)">
-                <span>📊 Excel</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
-                <input type="checkbox" ${file.exportFormats.includes('columns') ? 'checked' : ''} 
-                       onchange="updateFileExportFormats(${index}, 'columns', this.checked)">
-                <span>📑 Columns</span>
-              </label>
+          <div style="position:relative;">
+            <button type="button" onclick="toggleExportDropdown(${index})" 
+                    style="width:100%;padding:10px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;color:var(--text);">
+              <span style="font-size:13px;font-weight:500;">📥 Export Formats: <span id="export-count-${index}">${file.exportFormats.length}</span> selected</span>
+              <span id="export-arrow-${index}" style="transition:transform 0.2s;">▼</span>
+            </button>
+            <div id="export-dropdown-${index}" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#ffffff;border:1px solid var(--border);border-radius:6px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;">
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;">
+                  <input type="checkbox" ${file.exportFormats.includes('csv') ? 'checked' : ''} 
+                         onchange="updateFileExportFormats(${index}, 'csv', this.checked); updateExportCount(${index})">
+                  <span style="color:#000000;">📄 CSV</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;">
+                  <input type="checkbox" ${file.exportFormats.includes('json') ? 'checked' : ''} 
+                         onchange="updateFileExportFormats(${index}, 'json', this.checked); updateExportCount(${index})">
+                  <span style="color:#000000;">📋 JSON</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;">
+                  <input type="checkbox" ${file.exportFormats.includes('excel') ? 'checked' : ''} 
+                         onchange="updateFileExportFormats(${index}, 'excel', this.checked); updateExportCount(${index})">
+                  <span style="color:#000000;">📊 Excel</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;">
+                  <input type="checkbox" ${file.exportFormats.includes('columns') ? 'checked' : ''} 
+                         onchange="updateFileExportFormats(${index}, 'columns', this.checked); updateExportCount(${index})">
+                  <span style="color:#000000;">📑 Column Files</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
       `;
     }).join('');
+  }
+}
+
+function toggleExportDropdown(fileIndex) {
+  const dropdown = document.getElementById(`export-dropdown-${fileIndex}`);
+  const arrow = document.getElementById(`export-arrow-${fileIndex}`);
+  if (dropdown && arrow) {
+    const isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+    arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
+}
+
+function updateExportCount(fileIndex) {
+  const file = fileQueue[fileIndex];
+  if (file) {
+    const countEl = document.getElementById(`export-count-${fileIndex}`);
+    if (countEl) {
+      countEl.textContent = file.exportFormats ? file.exportFormats.length : 0;
+    }
   }
 }
 
@@ -2386,8 +2389,36 @@ function updateFileExportFormats(fileIndex, format, enabled) {
     } else {
       fileQueue[fileIndex].exportFormats = fileQueue[fileIndex].exportFormats.filter(f => f !== format);
     }
+    updateExportCount(fileIndex);
   }
 }
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+  // Close export format dropdowns
+  if (!event.target.closest('[id^="export-dropdown-"]') && !event.target.closest('button[onclick^="toggleExportDropdown"]')) {
+    const dropdowns = document.querySelectorAll('[id^="export-dropdown-"]');
+    dropdowns.forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
+    const arrows = document.querySelectorAll('[id^="export-arrow-"]');
+    arrows.forEach(arrow => {
+      arrow.style.transform = 'rotate(0deg)';
+    });
+  }
+  
+  // Close download dropdowns
+  if (!event.target.closest('[id$="-dropdown"]') && !event.target.closest('button[onclick^="toggleDownloadDropdown"]')) {
+    const downloadDropdowns = document.querySelectorAll('[id$="-dropdown"]');
+    downloadDropdowns.forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
+    const downloadArrows = document.querySelectorAll('[id$="-arrow"]');
+    downloadArrows.forEach(arrow => {
+      arrow.style.transform = 'rotate(0deg)';
+    });
+  }
+});
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
@@ -2601,49 +2632,64 @@ function buildFileExportSection(data, exportFormats, filename) {
   const columnFiles = data.column_files || {};
   const baseFilename = filename.replace(/\.[^/.]+$/, '');
   
+  // Check for skipped exports due to file size
+  const warnings = [];
+  if (outputs._json_skipped) warnings.push(outputs._json_skipped);
+  if (outputs._excel_skipped) warnings.push(outputs._excel_skipped);
+  if (outputs._excel_error) warnings.push(`Excel export failed: ${outputs._excel_error}`);
+  if (outputs._columns_note) warnings.push(outputs._columns_note);
+  
+  // Build available downloads
+  const availableDownloads = [];
+  if (exportFormats.includes('csv') && outputs.master_cleanse_csv) {
+    availableDownloads.push({type: 'csv', label: '📄 Master CSV', data: outputs.master_cleanse_csv, filename: `${baseFilename}_master_cleaned.csv`, mime: 'text/csv'});
+  }
+  if (exportFormats.includes('json') && outputs.master_cleanse_json) {
+    availableDownloads.push({type: 'json', label: '📋 Master JSON', data: outputs.master_cleanse_json, filename: `${baseFilename}_master_cleaned.json`, mime: 'application/json'});
+  }
+  if (exportFormats.includes('excel') && outputs.master_cleanse_excel) {
+    availableDownloads.push({type: 'excel', label: '📊 Master Excel', data: outputs.master_cleanse_excel, filename: `${baseFilename}_master_cleaned.xlsx`, mime: 'excel'});
+  }
+  
+  const downloadId = `download-${baseFilename.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  
   let html = `
     <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:16px;">
       <h5 style="margin:0 0 12px;font-size:16px;color:#3b82f6;">📥 Download Exports</h5>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:${exportFormats.includes('columns') && Object.keys(columnFiles).length > 0 ? '16px' : '0'};">
-  `;
-  
-  // Master file exports
-  if (exportFormats.includes('csv') && outputs.master_cleanse_csv) {
-    html += `<button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_csv.replace(/'/g, "\\'")}', '${baseFilename}_master_cleaned.csv', 'text/csv')" style="font-size:13px;">📄 Master CSV</button>`;
-  }
-  if (exportFormats.includes('json') && outputs.master_cleanse_json) {
-    html += `<button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_master_cleaned.json', 'application/json')" style="font-size:13px;">📋 Master JSON</button>`;
-  }
-  if (exportFormats.includes('excel') && outputs.master_cleanse_excel) {
-    html += `<button class="btn primary" onclick="downloadExcelFromBase64('${outputs.master_cleanse_excel}', '${baseFilename}_master_cleaned.xlsx')" style="font-size:13px;">📊 Master Excel</button>`;
-  }
-  
-  html += `</div>`;
-  
-  // Column-based files (always show - core feature for data verification)
-  if (Object.keys(columnFiles).length > 0) {
-    html += `
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(59,130,246,0.2);">
-        <h6 style="margin:0 0 12px;font-size:14px;color:#3b82f6;">📑 Column-Based Files (One per column)</h6>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
-    `;
-    
-    for (const [colName, colData] of Object.entries(columnFiles)) {
-      const safeColName = colName.replace(/[^a-zA-Z0-9]/g, '_');
-      html += `
-        <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--bg);">
-          <div style="font-weight:500;font-size:13px;margin-bottom:8px;color:var(--text);">${colName}</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', '${baseFilename}_column_${safeColName}.csv', 'text/csv')" style="font-size:11px;padding:4px 8px;">CSV</button>` : ''}
-            ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_column_${safeColName}.json', 'application/json')" style="font-size:11px;padding:4px 8px;">JSON</button>` : ''}
-            ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', '${baseFilename}_column_${safeColName}.xlsx')" style="font-size:11px;padding:4px 8px;">Excel</button>` : ''}
-          </div>
+      ${warnings.length > 0 ? `
+        <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:6px;padding:10px;margin-bottom:12px;font-size:13px;color:#000000;">
+          <strong style="color:#fbbf24;">⚠️ Large File Optimizations:</strong>
+          <ul style="margin:6px 0 0 20px;padding:0;color:#000000;">
+            ${warnings.map(w => `<li style="margin:4px 0;color:#000000;">${w}</li>`).join('')}
+          </ul>
         </div>
-      `;
-    }
-    
-    html += `</div></div>`;
-  }
+      ` : ''}
+      <div style="position:relative;">
+        <button type="button" onclick="toggleDownloadDropdown('${downloadId}')" 
+                style="width:100%;padding:12px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;color:var(--text);font-weight:500;">
+          <span>Select Files to Download (<span id="${downloadId}-count">${availableDownloads.length}</span> available)</span>
+          <span id="${downloadId}-arrow" style="transition:transform 0.2s;">▼</span>
+        </button>
+        <div id="${downloadId}-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#ffffff;border:1px solid var(--border);border-radius:6px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;max-height:300px;overflow-y:auto;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${availableDownloads.map((dl, idx) => `
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;padding:6px;border-radius:4px;transition:background 0.2s;" 
+                     onmouseover="this.style.background='rgba(59,130,246,0.1)'" 
+                     onmouseout="this.style.background='transparent'">
+                <input type="checkbox" class="download-checkbox" data-type="${dl.type}" data-filename="${dl.filename}" data-mime="${dl.mime}" 
+                       data-content="${dl.type === 'excel' ? dl.data : dl.data.replace(/'/g, '&apos;').replace(/\n/g, '\\n')}">
+                <span style="color:#000000;">${dl.label}</span>
+              </label>
+            `).join('')}
+            ${availableDownloads.length === 0 ? `<div style="color:#666666;font-size:13px;padding:8px;">No downloads available</div>` : ''}
+          </div>
+          <button type="button" onclick="downloadSelectedFiles('${downloadId}')" 
+                  style="width:100%;margin-top:12px;padding:10px;background:#3b82f6;color:#ffffff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;">
+            Download Selected
+          </button>
+        </div>
+      </div>
+  `;
   
   html += `</div>`;
   
@@ -2697,10 +2743,8 @@ function displaySingleFileResult(data, resultDiv, exportFormats) {
     </div>
     
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <h3 style="margin:0 0 16px;font-size:18px;">📥 Download Exports</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-        ${exportButtons}
-      </div>
+      <h3 style="margin:0 0 16px;font-size:18px;color:var(--text);">📥 Download Exports</h3>
+      ${exportButtons}
     </div>
     
     ${columnFilesSection}
@@ -2714,59 +2758,136 @@ function displaySingleFileResult(data, resultDiv, exportFormats) {
   `;
 }
 
+function toggleDownloadDropdown(downloadId) {
+  const dropdown = document.getElementById(`${downloadId}-dropdown`);
+  const arrow = document.getElementById(`${downloadId}-arrow`);
+  if (dropdown && arrow) {
+    const isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+    arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
+}
+
+function downloadSelectedFiles(downloadId) {
+  const checkboxes = document.querySelectorAll(`#${downloadId}-dropdown .download-checkbox:checked`);
+  if (checkboxes.length === 0) {
+    alert('Please select at least one file to download.');
+    return;
+  }
+  
+  checkboxes.forEach((checkbox, index) => {
+    setTimeout(() => {
+      const type = checkbox.getAttribute('data-type');
+      const filename = checkbox.getAttribute('data-filename');
+      const mime = checkbox.getAttribute('data-mime');
+      const content = checkbox.getAttribute('data-content');
+      
+      if (type === 'excel') {
+        downloadExcelFromBase64(content, filename);
+      } else {
+        // Decode the content (it was escaped for HTML)
+        const decodedContent = content.replace(/&apos;/g, "'").replace(/\\n/g, '\n');
+        downloadFile(decodedContent, filename, mime);
+      }
+    }, index * 200); // Stagger downloads slightly
+  });
+  
+  // Close dropdown after download
+  setTimeout(() => {
+    toggleDownloadDropdown(downloadId);
+  }, checkboxes.length * 200 + 100);
+}
+
 function buildExportButtons(outputs, originalFileType, exportFormats) {
-  const buttons = [];
-  
+  // Build available downloads
+  const availableDownloads = [];
   if (exportFormats.includes('csv') && outputs.master_cleanse_csv) {
-    buttons.push(`
-      <button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_csv.replace(/'/g, "\\'")}', 'cleaned_data.csv', 'text/csv')" style="width:100%;">
-        📄 Download CSV
-      </button>
-    `);
+    availableDownloads.push({type: 'csv', label: '📄 CSV', data: outputs.master_cleanse_csv, filename: 'cleaned_data.csv', mime: 'text/csv'});
   }
-  
   if (exportFormats.includes('json') && outputs.master_cleanse_json) {
-    buttons.push(`
-      <button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'cleaned_data.json', 'application/json')" style="width:100%;">
-        📋 Download JSON
-      </button>
-    `);
+    availableDownloads.push({type: 'json', label: '📋 JSON', data: outputs.master_cleanse_json, filename: 'cleaned_data.json', mime: 'application/json'});
   }
-  
   if (exportFormats.includes('excel') && outputs.master_cleanse_excel) {
-    buttons.push(`
-      <button class="btn primary" onclick="downloadExcelFromBase64('${outputs.master_cleanse_excel}', 'cleaned_data.xlsx')" style="width:100%;">
-        📊 Download Excel
-      </button>
-    `);
+    availableDownloads.push({type: 'excel', label: '📊 Excel', data: outputs.master_cleanse_excel, filename: 'cleaned_data.xlsx', mime: 'excel'});
   }
   
-  return buttons.join('');
+  const downloadId = 'download-single';
+  
+  return `
+    <div style="position:relative;">
+      <button type="button" onclick="toggleDownloadDropdown('${downloadId}')" 
+              style="width:100%;padding:12px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;color:var(--text);font-weight:500;">
+        <span>Select Files to Download (<span id="${downloadId}-count">${availableDownloads.length}</span> available)</span>
+        <span id="${downloadId}-arrow" style="transition:transform 0.2s;">▼</span>
+      </button>
+      <div id="${downloadId}-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#ffffff;border:1px solid var(--border);border-radius:6px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${availableDownloads.map((dl, idx) => `
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;padding:6px;border-radius:4px;transition:background 0.2s;" 
+                   onmouseover="this.style.background='rgba(59,130,246,0.1)'" 
+                   onmouseout="this.style.background='transparent'">
+              <input type="checkbox" class="download-checkbox" data-type="${dl.type}" data-filename="${dl.filename}" data-mime="${dl.mime}" 
+                     data-content="${dl.type === 'excel' ? dl.data : dl.data.replace(/'/g, '&apos;').replace(/\n/g, '\\n')}">
+              <span style="color:#000000;">${dl.label}</span>
+            </label>
+          `).join('')}
+          ${availableDownloads.length === 0 ? `<div style="color:#666666;font-size:13px;padding:8px;">No downloads available</div>` : ''}
+        </div>
+        <button type="button" onclick="downloadSelectedFiles('${downloadId}')" 
+                style="width:100%;margin-top:12px;padding:10px;background:#3b82f6;color:#ffffff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;">
+          Download Selected
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function buildColumnFilesSection(columnFiles, baseFilename = 'cleaned_data') {
-  let html = `
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <h3 style="margin:0 0 12px;font-size:18px;">📑 Column-Based Files</h3>
-      <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">One file per column for data verification - ensures no accidental deletions:</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
-  `;
+  const columnId = `columns-${baseFilename.replace(/[^a-zA-Z0-9]/g, '_')}`;
   
+  // Build all available column downloads
+  const columnDownloads = [];
   for (const [colName, colData] of Object.entries(columnFiles)) {
     const safeColName = colName.replace(/[^a-zA-Z0-9]/g, '_');
-    html += `
-      <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--bg);">
-        <div style="font-weight:500;font-size:13px;margin-bottom:8px;color:var(--text);">${colName}</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', '${baseFilename}_column_${safeColName}.csv', 'text/csv')" style="font-size:11px;padding:4px 8px;">CSV</button>` : ''}
-          ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_column_${safeColName}.json', 'application/json')" style="font-size:11px;padding:4px 8px;">JSON</button>` : ''}
-          ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', '${baseFilename}_column_${safeColName}.xlsx')" style="font-size:11px;padding:4px 8px;">Excel</button>` : ''}
-        </div>
-      </div>
-    `;
+    if (colData.csv) {
+      columnDownloads.push({type: 'csv', label: `${colName} (CSV)`, data: colData.csv, filename: `${baseFilename}_column_${safeColName}.csv`, mime: 'text/csv'});
+    }
+    if (colData.json) {
+      columnDownloads.push({type: 'json', label: `${colName} (JSON)`, data: colData.json, filename: `${baseFilename}_column_${safeColName}.json`, mime: 'application/json'});
+    }
+    if (colData.excel) {
+      columnDownloads.push({type: 'excel', label: `${colName} (Excel)`, data: colData.excel, filename: `${baseFilename}_column_${safeColName}.xlsx`, mime: 'excel'});
+    }
   }
   
-  html += `
+  let html = `
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;font-size:18px;color:var(--text);">📑 Column-Based Files</h3>
+      <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">One file per column for data verification - ensures no accidental deletions:</p>
+      <div style="position:relative;">
+        <button type="button" onclick="toggleDownloadDropdown('${columnId}')" 
+                style="width:100%;padding:12px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;color:var(--text);font-weight:500;">
+          <span>Select Column Files to Download (<span id="${columnId}-count">${columnDownloads.length}</span> available)</span>
+          <span id="${columnId}-arrow" style="transition:transform 0.2s;">▼</span>
+        </button>
+        <div id="${columnId}-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#ffffff;border:1px solid var(--border);border-radius:6px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;max-height:400px;overflow-y:auto;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${columnDownloads.map((dl, idx) => `
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;padding:6px;border-radius:4px;transition:background 0.2s;" 
+                     onmouseover="this.style.background='rgba(59,130,246,0.1)'" 
+                     onmouseout="this.style.background='transparent'">
+                <input type="checkbox" class="download-checkbox" data-type="${dl.type}" data-filename="${dl.filename}" data-mime="${dl.mime}" 
+                       data-content="${dl.type === 'excel' ? dl.data : dl.data.replace(/'/g, '&apos;').replace(/\n/g, '\\n')}">
+                <span style="color:#000000;">${dl.label}</span>
+              </label>
+            `).join('')}
+            ${columnDownloads.length === 0 ? `<div style="color:#666666;font-size:13px;padding:8px;">No column files available</div>` : ''}
+          </div>
+          <button type="button" onclick="downloadSelectedFiles('${columnId}')" 
+                  style="width:100%;margin-top:12px;padding:10px;background:#3b82f6;color:#ffffff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;">
+            Download Selected
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -2792,10 +2913,8 @@ function displayBatchResults(results, resultDiv, button, originalText) {
             <strong>Rows:</strong> ${result.report.rows_in} → ${result.report.rows_out} | 
             <strong>Duplicates Removed:</strong> ${result.report.duplicates_removed || 0}
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${result.outputs.master_cleanse_csv ? `<button class="btn" onclick="downloadFile('${result.outputs.master_cleanse_csv.replace(/'/g, "\\'")}', '${result.filename}_cleaned.csv', 'text/csv')">CSV</button>` : ''}
-            ${result.outputs.master_cleanse_json ? `<button class="btn" onclick="downloadFile('${result.outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${result.filename}_cleaned.json', 'application/json')">JSON</button>` : ''}
-            ${result.outputs.master_cleanse_excel ? `<button class="btn" onclick="downloadExcelFromBase64('${result.outputs.master_cleanse_excel}', '${result.filename}_cleaned.xlsx')">Excel</button>` : ''}
+          <div style="position:relative;">
+            ${buildExportDropdownForBatch(result.outputs, result.filename)}
           </div>
         </div>
       `;
@@ -2909,6 +3028,48 @@ function downloadCSV(content, filename) {
   }
 }
 
+function buildExportDropdownForBatch(outputs, filename) {
+  const baseFilename = filename.replace(/\.[^/.]+$/, '');
+  const availableDownloads = [];
+  
+  if (outputs.master_cleanse_csv) {
+    availableDownloads.push({type: 'csv', label: '📄 CSV', data: outputs.master_cleanse_csv, filename: `${baseFilename}_cleaned.csv`, mime: 'text/csv'});
+  }
+  if (outputs.master_cleanse_json) {
+    availableDownloads.push({type: 'json', label: '📋 JSON', data: outputs.master_cleanse_json, filename: `${baseFilename}_cleaned.json`, mime: 'application/json'});
+  }
+  if (outputs.master_cleanse_excel) {
+    availableDownloads.push({type: 'excel', label: '📊 Excel', data: outputs.master_cleanse_excel, filename: `${baseFilename}_cleaned.xlsx`, mime: 'excel'});
+  }
+  
+  const downloadId = `batch-${baseFilename.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  
+  return `
+    <button type="button" onclick="toggleDownloadDropdown('${downloadId}')" 
+            style="width:100%;padding:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;color:var(--text);font-weight:500;font-size:14px;">
+      <span>Download Files (<span id="${downloadId}-count">${availableDownloads.length}</span> available)</span>
+      <span id="${downloadId}-arrow" style="transition:transform 0.2s;">▼</span>
+    </button>
+    <div id="${downloadId}-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#ffffff;border:1px solid var(--border);border-radius:6px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${availableDownloads.map((dl, idx) => `
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#000000;padding:6px;border-radius:4px;transition:background 0.2s;" 
+                 onmouseover="this.style.background='rgba(59,130,246,0.1)'" 
+                 onmouseout="this.style.background='transparent'">
+            <input type="checkbox" class="download-checkbox" data-type="${dl.type}" data-filename="${dl.filename}" data-mime="${dl.mime}" 
+                   data-content="${dl.type === 'excel' ? dl.data : dl.data.replace(/'/g, '&apos;').replace(/\n/g, '\\n')}">
+            <span style="color:#000000;">${dl.label}</span>
+          </label>
+        `).join('')}
+      </div>
+      <button type="button" onclick="downloadSelectedFiles('${downloadId}')" 
+              style="width:100%;margin-top:12px;padding:10px;background:#3b82f6;color:#ffffff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;">
+        Download Selected
+      </button>
+    </div>
+  `;
+}
+
 // Add spinner animation
 const style = document.createElement('style');
 style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
@@ -3012,3 +3173,4 @@ if (document.readyState === 'loading') {
     initAutomationServices();
   }
 }
+

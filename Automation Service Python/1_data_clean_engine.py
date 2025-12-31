@@ -694,7 +694,7 @@ class ApexDataCleanEngine:
         if len(data_rows) > chunk_size:
             return self._process_large_file_chunked(
                 rows, raw_headers, detected_type, delimiter, normalize_headers,
-                drop_empty_rows, apply_crm_mappings, started, chunk_size
+                drop_empty_rows, apply_crm_mappings, started, chunk_size, export_formats
             )
         
         # Use regular processing for smaller files
@@ -733,6 +733,7 @@ class ApexDataCleanEngine:
         apply_crm_mappings: bool,
         started: str,
         chunk_size: int = 10000,
+        export_formats: list[str] | None = None,
     ) -> tuple[dict[str, t.Any], DataCleanReport]:
         """Process very large files in chunks to avoid memory issues"""
         fixes: dict[str, int] = {
@@ -810,12 +811,95 @@ class ApexDataCleanEngine:
             irrelevant_rows_removed=fixes.get("irrelevant_rows_removed", 0),
         )
         
+        # For very large files, optimize export generation
         export_formats = export_formats or ['csv', 'json', 'excel', 'columns']
-        outputs = self._generate_multiple_outputs(
-            cleaned_csv, raw_headers, detected_type, report, all_cleaned_rows, headers_out, export_formats
+        num_rows = len(all_cleaned_rows)
+        
+        # For files with 50k+ rows, limit exports to prevent memory issues
+        if num_rows > 50000:
+            # Only generate CSV and skip memory-intensive formats unless explicitly requested
+            safe_formats = ['csv']
+            if 'json' in export_formats and num_rows <= 100000:
+                safe_formats.append('json')
+            # Excel and column files are too memory-intensive for very large files
+            if 'excel' in export_formats and num_rows <= 50000:
+                safe_formats.append('excel')
+            # Column files only for smaller large files
+            if 'columns' in export_formats and num_rows <= 25000:
+                safe_formats.append('columns')
+            
+            export_formats = safe_formats
+        
+        outputs = self._generate_multiple_outputs_optimized(
+            cleaned_csv, raw_headers, detected_type, report, all_cleaned_rows, headers_out, export_formats, num_rows
         )
         
         return outputs, report
+    
+    def _generate_multiple_outputs_optimized(
+        self,
+        cleaned_csv: str,
+        raw_headers: list[str],
+        original_file_type: str,
+        report: DataCleanReport,
+        cleaned_rows: list[list[str]] | None = None,
+        headers_out: list[str] | None = None,
+        export_formats: list[str] | None = None,
+        num_rows: int = 0,
+    ) -> dict[str, t.Any]:
+        """Generate multiple output formats with optimizations for large files"""
+        export_formats = export_formats or ['csv', 'json', 'excel', 'columns']
+        outputs: dict[str, t.Any] = {}
+        
+        # Parse cleaned CSV to get rows if not provided
+        if cleaned_rows is None or headers_out is None:
+            reader = csv.reader(io.StringIO(cleaned_csv))
+            rows_list = list(reader)
+            if rows_list:
+                headers_out = rows_list[0]
+                cleaned_rows = rows_list[1:]
+            else:
+                return outputs
+        
+        # Generate CSV output (always include as base - most memory efficient)
+        if 'csv' in export_formats:
+            outputs["master_cleanse_csv"] = cleaned_csv
+        
+        # Generate JSON output (memory-intensive for large files)
+        if 'json' in export_formats:
+            if num_rows <= 100000:
+                json_output = self._rows_to_json(cleaned_rows, headers_out)
+                outputs["master_cleanse_json"] = json_output
+            else:
+                # For very large files, skip JSON or provide a note
+                outputs["master_cleanse_json"] = None
+                outputs["_json_skipped"] = f"JSON export skipped for files with {num_rows:,} rows to prevent memory issues"
+        
+        # Generate Excel output (memory-intensive for large files)
+        if 'excel' in export_formats:
+            if num_rows <= 50000:
+                try:
+                    excel_output = self._rows_to_excel(cleaned_rows, headers_out)
+                    outputs["master_cleanse_excel"] = excel_output
+                except Exception as e:
+                    outputs["master_cleanse_excel"] = None
+                    outputs["_excel_error"] = str(e)
+            else:
+                outputs["master_cleanse_excel"] = None
+                outputs["_excel_skipped"] = f"Excel export skipped for files with {num_rows:,} rows to prevent memory issues"
+        
+        # Generate column-based files (very memory-intensive for large files)
+        if 'columns' in export_formats:
+            if num_rows <= 25000:
+                column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
+                outputs["column_files"] = column_files
+            else:
+                # For very large files, only generate CSV column files
+                column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, ['csv'])
+                outputs["column_files"] = column_files
+                outputs["_columns_note"] = f"Column files limited to CSV format for files with {num_rows:,} rows"
+        
+        return outputs
     
     def _generate_multiple_outputs(
         self,
@@ -867,7 +951,11 @@ class ApexDataCleanEngine:
         return outputs
     
     def _rows_to_json(self, rows: list[list[str]], headers: list[str]) -> str:
-        """Convert rows to JSON format"""
+        """Convert rows to JSON format - optimized for large files"""
+        # For very large files, use streaming JSON generation
+        if len(rows) > 50000:
+            return self._rows_to_json_streaming(rows, headers)
+        
         data = []
         for row in rows:
             obj = {}
@@ -876,26 +964,57 @@ class ApexDataCleanEngine:
             data.append(obj)
         return json.dumps(data, indent=2, ensure_ascii=False)
     
+    def _rows_to_json_streaming(self, rows: list[list[str]], headers: list[str]) -> str:
+        """Stream JSON generation for very large files to reduce memory usage"""
+        output = io.StringIO()
+        output.write('[\n')
+        
+        for idx, row in enumerate(rows):
+            if idx > 0:
+                output.write(',\n')
+            obj = {}
+            for i, header in enumerate(headers):
+                obj[header] = row[i] if i < len(row) else ""
+            json.dump(obj, output, ensure_ascii=False)
+        
+        output.write('\n]')
+        return output.getvalue()
+    
     def _rows_to_excel(self, rows: list[list[str]], headers: list[str]) -> bytes:
-        """Convert rows to Excel format"""
+        """Convert rows to Excel format - optimized for large files"""
         try:
             from openpyxl import Workbook
         except ImportError:
             raise ServiceError("Excel export requires 'openpyxl'. Install with: pip install openpyxl")
         
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Cleaned Data"
+        # Use write-only mode for large files to reduce memory usage
+        output = io.BytesIO()
         
-        # Write headers
-        ws.append(headers)
-        
-        # Write rows
-        for row in rows:
-            ws.append(row)
+        if len(rows) > 10000:
+            # Use write-only workbook for large files
+            wb = Workbook(write_only=True)
+            ws = wb.create_sheet("Cleaned Data")
+            
+            # Write headers
+            ws.append(headers)
+            
+            # Write rows in chunks
+            for row in rows:
+                ws.append(row)
+        else:
+            # Use regular workbook for smaller files
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Cleaned Data"
+            
+            # Write headers
+            ws.append(headers)
+            
+            # Write rows
+            for row in rows:
+                ws.append(row)
         
         # Save to bytes
-        output = io.BytesIO()
         wb.save(output)
         output.seek(0)
         return output.getvalue()
@@ -907,29 +1026,35 @@ class ApexDataCleanEngine:
         original_file_type: str,
         export_formats: list[str] | None = None,
     ) -> dict[str, dict[str, str | bytes]]:
-        """Generate one file per column to ensure no accidental deletions"""
+        """Generate one file per column to ensure no accidental deletions - optimized for large files"""
         export_formats = export_formats or ['csv', 'json', 'excel']
         column_files: dict[str, dict[str, str | bytes]] = {}
         
+        num_rows = len(rows)
+        
+        # For very large files, only generate CSV column files to save memory
+        if num_rows > 50000:
+            export_formats = ['csv']
+        
         for col_idx, header in enumerate(headers):
-            # Extract column data
+            # Extract column data efficiently
             column_data = [row[col_idx] if col_idx < len(row) else "" for row in rows]
             column_files[header] = {}
             
-            # Create CSV file for this column
+            # Create CSV file for this column (always available)
             if 'csv' in export_formats:
                 csv_rows = [[header]] + [[val] for val in column_data]
                 csv_content = self._rows_to_csv(csv_rows, ",")
                 column_files[header]["csv"] = csv_content
             
-            # Create JSON file for this column
-            if 'json' in export_formats:
+            # Create JSON file for this column (only for smaller files)
+            if 'json' in export_formats and num_rows <= 25000:
                 json_data = [{header: val} for val in column_data]
                 json_content = json.dumps(json_data, indent=2, ensure_ascii=False)
                 column_files[header]["json"] = json_content
             
-            # Create Excel file for this column
-            if 'excel' in export_formats:
+            # Create Excel file for this column (only for smaller files)
+            if 'excel' in export_formats and num_rows <= 10000:
                 try:
                     csv_rows = [[header]] + [[val] for val in column_data]
                     excel_content = self._rows_to_excel(csv_rows[1:], [header])
