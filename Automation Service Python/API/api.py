@@ -169,55 +169,112 @@ def list_services():
 
 @app.route('/api/services/data-clean', methods=['POST'])
 def data_clean():
-    """Data Clean Engine service - supports file uploads and multiple formats"""
+    """Data Clean Engine service - supports batch file uploads, large files, and multiple formats"""
     try:
-        # Check if file was uploaded
-        if 'file' in request.files:
-            file = request.files['file']
-            if file.filename == '':
-                return jsonify({'success': False, 'error': 'No file selected'}), 400
+        # Check if files were uploaded (support multiple files)
+        if 'files[]' in request.files or 'file' in request.files:
+            # Handle batch uploads
+            files = request.files.getlist('files[]') or [request.files.get('file')]
+            files = [f for f in files if f and f.filename]
             
-            filename = file.filename
-            file_content = file.read()
+            if not files:
+                return jsonify({'success': False, 'error': 'No files selected'}), 400
             
             # Get options from form data
             delimiter = request.form.get('delimiter', ',')
             normalize_headers = request.form.get('normalize_headers', 'true').lower() == 'true'
             drop_empty_rows = request.form.get('drop_empty_rows', 'true').lower() == 'true'
             apply_crm_mappings = request.form.get('apply_crm_mappings', 'true').lower() == 'true'
-            file_type = request.form.get('file_type')  # Optional override
-            sheet_name = request.form.get('sheet_name')  # For Excel files
+            file_type = request.form.get('file_type')
+            sheet_name = request.form.get('sheet_name')
             
-            cleaned_csv, report = data_clean_engine.clean_file(
-                file_content,
-                filename,
-                file_type=file_type if file_type else None,
-                delimiter=delimiter,
-                normalize_headers=normalize_headers,
-                drop_empty_rows=drop_empty_rows,
-                apply_crm_mappings=apply_crm_mappings,
-                sheet_name=sheet_name if sheet_name else None,
-            )
+            # Process all files
+            results = []
+            for file in files:
+                if not file.filename:
+                    continue
+                
+                filename = file.filename
+                file_content = file.read()
+                
+                # Use streaming method for large files (handles 100k+ entries)
+                try:
+                    outputs, report = data_clean_engine.clean_file_streaming(
+                        file_content,
+                        filename,
+                        file_type=file_type if file_type else None,
+                        delimiter=delimiter,
+                        normalize_headers=normalize_headers,
+                        drop_empty_rows=drop_empty_rows,
+                        apply_crm_mappings=apply_crm_mappings,
+                        sheet_name=sheet_name if sheet_name else None,
+                        chunk_size=10000,  # Process in 10k row chunks
+                    )
+                    
+                    # Encode binary data for JSON response
+                    result_data = {
+                        'filename': filename,
+                        'success': True,
+                        'outputs': {
+                            'master_cleanse_csv': outputs.get('master_cleanse_csv', ''),
+                            'master_cleanse_json': outputs.get('master_cleanse_json', ''),
+                            'master_cleanse_excel': None,  # Will be sent as base64
+                        },
+                        'column_files': {},
+                        'report': {
+                            'rows_in': report.rows_in,
+                            'rows_out': report.rows_out,
+                            'columns_in': report.columns_in,
+                            'columns_out': report.columns_out,
+                            'header_map': report.header_map,
+                            'fixes': report.fixes,
+                            'started_at': report.started_at,
+                            'finished_at': report.finished_at,
+                            'file_type': report.file_type,
+                            'crm_detected': report.crm_detected,
+                            'field_mappings': report.field_mappings,
+                            'duplicates_removed': getattr(report, 'duplicates_removed', 0),
+                            'irrelevant_rows_removed': getattr(report, 'irrelevant_rows_removed', 0),
+                        }
+                    }
+                    
+                    # Encode Excel files as base64
+                    import base64
+                    if outputs.get('master_cleanse_excel'):
+                        result_data['outputs']['master_cleanse_excel'] = base64.b64encode(
+                            outputs['master_cleanse_excel']
+                        ).decode('utf-8')
+                    
+                    # Encode column files
+                    if outputs.get('column_files'):
+                        for col_name, col_data in outputs['column_files'].items():
+                            result_data['column_files'][col_name] = {
+                                'csv': col_data.get('csv', ''),
+                                'json': col_data.get('json', ''),
+                                'excel': base64.b64encode(col_data['excel']).decode('utf-8') if col_data.get('excel') else None,
+                            }
+                    
+                    results.append(result_data)
+                    
+                except Exception as e:
+                    results.append({
+                        'filename': filename,
+                        'success': False,
+                        'error': str(e)
+                    })
             
-            return jsonify({
-                'success': True,
-                'cleaned_csv': cleaned_csv,
-                'report': {
-                    'rows_in': report.rows_in,
-                    'rows_out': report.rows_out,
-                    'columns_in': report.columns_in,
-                    'columns_out': report.columns_out,
-                    'header_map': report.header_map,
-                    'fixes': report.fixes,
-                    'started_at': report.started_at,
-                    'finished_at': report.finished_at,
-                    'file_type': report.file_type,
-                    'crm_detected': report.crm_detected,
-                    'field_mappings': report.field_mappings,
-                    'duplicates_removed': getattr(report, 'duplicates_removed', 0),
-                    'irrelevant_rows_removed': getattr(report, 'irrelevant_rows_removed', 0),
-                }
-            })
+            # Return batch results
+            if len(results) == 1:
+                # Single file - return directly
+                return jsonify(results[0])
+            else:
+                # Multiple files - return array
+                return jsonify({
+                    'success': True,
+                    'batch': True,
+                    'files_processed': len(results),
+                    'results': results
+                })
         
         # Fallback to text-based input (for backward compatibility)
         if request.is_json:

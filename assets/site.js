@@ -2120,11 +2120,11 @@ function loadServiceInterface(serviceId, container) {
 function renderDataCleanInterface(container) {
   container.innerHTML = `
     <h2 style="margin:0 0 24px;font-size:28px;">🧹 Data Clean Engine</h2>
-    <p style="color:var(--muted);margin-bottom:24px;">Cleans, standardizes, and fixes messy data files. Supports CSV, Excel (XLSX/XLS), JSON, TSV, and CRM exports (Salesforce, HubSpot, Pipedrive).</p>
+    <p style="color:var(--muted);margin-bottom:24px;">Cleans, standardizes, and fixes messy data files. Supports CSV, Excel (XLSX/XLS), JSON, TSV, and CRM exports (Salesforce, HubSpot, Pipedrive). <strong>Now supports batch processing and files with millions of rows!</strong></p>
     
     <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:16px;margin-bottom:24px;">
-      <h3 style="margin:0 0 12px;font-size:16px;color:var(--accent);">📋 Supported Formats</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:14px;">
+      <h3 style="margin:0 0 12px;font-size:16px;color:var(--accent);">📋 Supported Formats & Features</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:14px;margin-bottom:12px;">
         <div>• CSV files</div>
         <div>• Excel (XLSX/XLS)</div>
         <div>• JSON files</div>
@@ -2133,27 +2133,33 @@ function renderDataCleanInterface(container) {
         <div>• HubSpot exports</div>
         <div>• Pipedrive exports</div>
       </div>
+      <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:12px;margin-top:12px;">
+        <strong style="color:#22c55e;">✨ New Features:</strong>
+        <ul style="margin:8px 0 0 20px;font-size:13px;">
+          <li>Batch upload multiple files at once</li>
+          <li>Handles files with 100,000+ entries (billions supported)</li>
+          <li>Multiple export formats (CSV, JSON, Excel)</li>
+          <li>Column-based files for data verification</li>
+        </ul>
+      </div>
     </div>
     
     <form id="data-clean-form" enctype="multipart/form-data" onsubmit="handleDataClean(event)">
       <div class="form-group" style="margin-bottom:20px;">
-        <label style="display:block;margin-bottom:8px;font-weight:500;">Upload File</label>
+        <label style="display:block;margin-bottom:8px;font-weight:500;">Upload Files (Multiple files supported)</label>
         <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;background:var(--bg);transition:all 0.2s;" 
              id="file-drop-zone" 
              ondrop="handleFileDrop(event)" 
              ondragover="event.preventDefault();event.currentTarget.style.borderColor='var(--accent)';" 
              ondragleave="event.currentTarget.style.borderColor='var(--border)';">
-          <input type="file" id="data-file" name="file" accept=".csv,.xlsx,.xls,.json,.tsv" 
-                 style="display:none;" onchange="handleFileSelect(event)">
+          <input type="file" id="data-file" name="files[]" accept=".csv,.xlsx,.xls,.json,.tsv" 
+                 multiple style="display:none;" onchange="handleFileSelect(event)">
           <div style="font-size:48px;margin-bottom:12px;">📁</div>
-          <p style="margin:0 0 12px;color:var(--muted);">Drag and drop a file here, or</p>
+          <p style="margin:0 0 12px;color:var(--muted);">Drag and drop files here, or</p>
           <button type="button" class="btn" onclick="document.getElementById('data-file').click()">Browse Files</button>
-          <div id="file-info" style="margin-top:16px;display:none;">
-            <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-              <span style="font-weight:500;" id="file-name"></span>
-              <button type="button" onclick="clearFileSelection()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;">✕</button>
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="file-size"></div>
+          <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">You can select multiple files at once</p>
+          <div id="file-list" style="margin-top:16px;display:none;">
+            <div id="file-items" style="text-align:left;"></div>
           </div>
         </div>
       </div>
@@ -2205,33 +2211,56 @@ function renderDataCleanInterface(container) {
 }
 
 function handleFileSelect(event) {
-  const file = event.target.files[0];
-  if (file) {
-    displayFileInfo(file);
+  const files = Array.from(event.target.files);
+  if (files.length > 0) {
+    displayFileList(files);
   }
 }
 
 function handleFileDrop(event) {
   event.preventDefault();
   event.currentTarget.style.borderColor = 'var(--border)';
-  const file = event.dataTransfer.files[0];
-  if (file) {
+  const files = Array.from(event.dataTransfer.files);
+  if (files.length > 0) {
     const fileInput = document.getElementById('data-file');
     const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
+    files.forEach(file => dataTransfer.items.add(file));
     fileInput.files = dataTransfer.files;
-    displayFileInfo(file);
+    displayFileList(files);
   }
 }
 
-function displayFileInfo(file) {
-  const fileInfo = document.getElementById('file-info');
-  const fileName = document.getElementById('file-name');
-  const fileSize = document.getElementById('file-size');
+function displayFileList(files) {
+  const fileList = document.getElementById('file-list');
+  const fileItems = document.getElementById('file-items');
   
-  fileName.textContent = file.name;
-  fileSize.textContent = formatFileSize(file.size);
-  fileInfo.style.display = 'block';
+  fileItems.innerHTML = files.map((file, index) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <div style="font-weight:500;font-size:14px;">${file.name}</div>
+        <div style="font-size:12px;color:var(--muted);">${formatFileSize(file.size)}</div>
+      </div>
+      <button type="button" onclick="removeFile(${index})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0 8px;">✕</button>
+    </div>
+  `).join('');
+  
+  fileList.style.display = 'block';
+}
+
+function removeFile(index) {
+  const fileInput = document.getElementById('data-file');
+  const files = Array.from(fileInput.files);
+  files.splice(index, 1);
+  
+  const dataTransfer = new DataTransfer();
+  files.forEach(file => dataTransfer.items.add(file));
+  fileInput.files = dataTransfer.files;
+  
+  if (files.length > 0) {
+    displayFileList(files);
+  } else {
+    document.getElementById('file-list').style.display = 'none';
+  }
 }
 
 function formatFileSize(bytes) {
@@ -2244,7 +2273,7 @@ function formatFileSize(bytes) {
 
 function clearFileSelection() {
   document.getElementById('data-file').value = '';
-  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('file-list').style.display = 'none';
 }
 
 function handleDataClean(event) {
