@@ -859,10 +859,10 @@ class ApexDataCleanEngine:
                 # Excel generation failed, skip it
                 pass
         
-        # Generate column-based files (one per column) - only if requested
-        if 'columns' in export_formats:
-            column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
-            outputs["column_files"] = column_files
+        # Always generate column-based files (one per column) - this is a core feature
+        # Column files help ensure no accidental deletions during data verification
+        column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
+        outputs["column_files"] = column_files
         
         return outputs
     

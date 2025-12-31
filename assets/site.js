@@ -2120,6 +2120,20 @@ function loadServiceInterface(serviceId, container) {
 // Global file queue for tracking uploaded files
 let fileQueue = [];
 
+// Helper to get file icon based on extension
+function getFileIcon(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const icons = {
+    'csv': '📄',
+    'xlsx': '📊',
+    'xls': '📊',
+    'json': '📋',
+    'tsv': '📑',
+    'txt': '📝'
+  };
+  return icons[ext] || '📁';
+}
+
 function renderDataCleanInterface(container) {
   container.innerHTML = `
     <h2 style="margin:0 0 24px;font-size:28px;">🧹 Data Clean Engine</h2>
@@ -2157,11 +2171,11 @@ function renderDataCleanInterface(container) {
              ondragover="event.preventDefault();event.currentTarget.style.borderColor='var(--accent)';" 
              ondragleave="event.currentTarget.style.borderColor='var(--border)';">
           <input type="file" id="data-file" name="files[]" accept=".csv,.xlsx,.xls,.json,.tsv" 
-                 multiple style="display:none;" onchange="handleFileSelect(event)">
+                 multiple style="display:none;" onchange="handleFileSelect(event)" ondblclick="this.click()">
           <div style="font-size:48px;margin-bottom:12px;">📁</div>
           <p style="margin:0 0 12px;color:var(--muted);">Drag and drop files here, or</p>
-          <button type="button" class="btn" onclick="document.getElementById('data-file').click()">Browse Files</button>
-          <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">Select multiple files at once or add them individually</p>
+          <button type="button" class="btn" onclick="document.getElementById('data-file').click()" ondblclick="document.getElementById('data-file').click()">Browse Files</button>
+          <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">Double-click to browse, or select multiple files at once</p>
         </div>
       </div>
       
@@ -2172,7 +2186,7 @@ function renderDataCleanInterface(container) {
             <h3 style="margin:0;font-size:18px;">📋 File Queue (<span id="queue-count">0</span> files)</h3>
             <button type="button" class="btn" onclick="clearFileQueue()" style="font-size:12px;padding:6px 12px;">Clear All</button>
           </div>
-          <div id="file-queue-list" style="max-height:300px;overflow-y:auto;">
+          <div id="file-queue-list" style="max-height:400px;overflow-y:auto;">
             <!-- File queue items will be inserted here -->
           </div>
         </div>
@@ -2307,22 +2321,71 @@ function updateFileQueueDisplay() {
     processBtn.disabled = false;
     processBtn.textContent = `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)`;
     
-    queueList.innerHTML = fileQueue.map((file, index) => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;">
-        <div style="flex:1;display:flex;align-items:center;gap:12px;">
-          <div style="font-size:24px;">📄</div>
-          <div style="flex:1;">
-            <div style="font-weight:500;font-size:14px;margin-bottom:4px;">${file.name}</div>
-            <div style="font-size:12px;color:var(--muted);">${formatFileSize(file.size)}</div>
+    queueList.innerHTML = fileQueue.map((file, index) => {
+      // Initialize export formats for this file if not set
+      if (!file.exportFormats) {
+        file.exportFormats = ['csv', 'json', 'excel', 'columns'];
+      }
+      
+      return `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="flex:1;display:flex;align-items:center;gap:12px;">
+              <div style="font-size:28px;">${getFileIcon(file.name)}</div>
+              <div style="flex:1;">
+                <div style="font-weight:500;font-size:15px;margin-bottom:4px;">${file.name}</div>
+                <div style="font-size:12px;color:var(--muted);">${formatFileSize(file.size)}</div>
+              </div>
+            </div>
+            <button type="button" onclick="removeFileFromQueue(${index})" 
+                    style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0 12px;transition:color 0.2s;"
+                    onmouseover="this.style.color='#ef4444'" 
+                    onmouseout="this.style.color='var(--muted)'"
+                    title="Remove from queue">✕</button>
+          </div>
+          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:12px;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#3b82f6;">📥 Export Formats for this file:</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" ${file.exportFormats.includes('csv') ? 'checked' : ''} 
+                       onchange="updateFileExportFormats(${index}, 'csv', this.checked)">
+                <span>📄 CSV</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" ${file.exportFormats.includes('json') ? 'checked' : ''} 
+                       onchange="updateFileExportFormats(${index}, 'json', this.checked)">
+                <span>📋 JSON</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" ${file.exportFormats.includes('excel') ? 'checked' : ''} 
+                       onchange="updateFileExportFormats(${index}, 'excel', this.checked)">
+                <span>📊 Excel</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" ${file.exportFormats.includes('columns') ? 'checked' : ''} 
+                       onchange="updateFileExportFormats(${index}, 'columns', this.checked)">
+                <span>📑 Columns</span>
+              </label>
+            </div>
           </div>
         </div>
-        <button type="button" onclick="removeFileFromQueue(${index})" 
-                style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0 12px;transition:color 0.2s;"
-                onmouseover="this.style.color='#ef4444'" 
-                onmouseout="this.style.color='var(--muted)'"
-                title="Remove from queue">✕</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+  }
+}
+
+function updateFileExportFormats(fileIndex, format, enabled) {
+  if (fileQueue[fileIndex]) {
+    if (!fileQueue[fileIndex].exportFormats) {
+      fileQueue[fileIndex].exportFormats = [];
+    }
+    if (enabled) {
+      if (!fileQueue[fileIndex].exportFormats.includes(format)) {
+        fileQueue[fileIndex].exportFormats.push(format);
+      }
+    } else {
+      fileQueue[fileIndex].exportFormats = fileQueue[fileIndex].exportFormats.filter(f => f !== format);
+    }
   }
 }
 
@@ -2351,11 +2414,11 @@ function processFileQueue() {
     return;
   }
   
-  // Get selected export formats
-  const exportFormats = Array.from(document.querySelectorAll('input[name="export_formats"]:checked')).map(cb => cb.value);
-  if (exportFormats.length === 0) {
+  // Validate that each file has at least one export format selected
+  const filesWithoutFormats = fileQueue.filter(f => !f.exportFormats || f.exportFormats.length === 0);
+  if (filesWithoutFormats.length > 0) {
     resultDiv.style.display = 'block';
-    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please select at least one export format.</div>`;
+    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please select at least one export format for each file.</div>`;
     return;
   }
   
@@ -2376,70 +2439,215 @@ function processFileQueue() {
     </div>
   `;
   
-  const formData = new FormData();
-  
+  // Process files individually with their specific export formats
   if (fileQueue.length > 0) {
-    // File upload mode - use queued files
-    fileQueue.forEach(file => {
-      formData.append('files[]', file);
-    });
-    formData.append('delimiter', document.getElementById('delimiter').value || ',');
-    formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
-    formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
-    formData.append('apply_crm_mappings', document.getElementById('apply-crm-mappings').checked);
-    formData.append('export_formats', exportFormats.join(','));
-    const fileType = document.getElementById('file-type').value;
-    if (fileType) {
-      formData.append('file_type', fileType);
-    }
+    processFilesIndividually(fileQueue, resultDiv, button, originalText);
   } else {
     // Text mode (backward compatibility)
+    const formData = new FormData();
     formData.append('csv_text', csvText);
     formData.append('delimiter', document.getElementById('delimiter').value || ',');
     formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
     formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
+    formData.append('export_formats', 'csv,json,excel,columns'); // Default for text input
+    
+    fetch(`${API_BASE_URL}/services/data-clean`, {
+      method: 'POST',
+      body: JSON.stringify({
+        csv_text: csvText,
+        delimiter: document.getElementById('delimiter').value || ',',
+        normalize_headers: document.getElementById('normalize-headers').checked,
+        drop_empty_rows: document.getElementById('drop-empty-rows').checked
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        displaySingleFileResult(data, resultDiv, ['csv', 'json', 'excel', 'columns']);
+      } else {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${data.error}</div>`;
+      }
+    })
+    .catch(error => {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${error.message}</div>`;
+    })
+    .finally(() => {
+      button.disabled = fileQueue.length === 0;
+      button.textContent = fileQueue.length > 0 ? `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)` : 'Clean Data (0 files queued)';
+    });
   }
+}
+
+function processFilesIndividually(files, resultDiv, button, originalText) {
+  const results = [];
+  let processedCount = 0;
   
-  fetch(`${API_BASE_URL}/services/data-clean`, {
-    method: 'POST',
-    body: fileQueue.length > 0 ? formData : JSON.stringify({
-      csv_text: csvText,
-      delimiter: document.getElementById('delimiter').value || ',',
-      normalize_headers: document.getElementById('normalize-headers').checked,
-      drop_empty_rows: document.getElementById('drop-empty-rows').checked
-    }),
-    headers: fileQueue.length > 0 ? {} : { 'Content-Type': 'application/json' }
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      // Handle batch results
-      if (data.batch && data.results) {
-        displayBatchResults(data.results, resultDiv, button, originalText);
-        // Clear queue after successful processing
+  files.forEach((file, index) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('delimiter', document.getElementById('delimiter').value || ',');
+    formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
+    formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
+    formData.append('apply_crm_mappings', document.getElementById('apply-crm-mappings').checked);
+    formData.append('export_formats', file.exportFormats.join(','));
+    const fileType = document.getElementById('file-type').value;
+    if (fileType) {
+      formData.append('file_type', fileType);
+    }
+    
+    fetch(`${API_BASE_URL}/services/data-clean`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      processedCount++;
+      results.push({
+        filename: file.name,
+        success: data.success,
+        data: data,
+        exportFormats: file.exportFormats
+      });
+      
+      if (processedCount === files.length) {
+        displayProcessingSummary(results, resultDiv, button, originalText);
         fileQueue = [];
         updateFileQueueDisplay();
-        return;
       }
+    })
+    .catch(error => {
+      processedCount++;
+      results.push({
+        filename: file.name,
+        success: false,
+        error: error.message,
+        exportFormats: file.exportFormats
+      });
       
-      // Single file result
-      displaySingleFileResult(data, resultDiv, exportFormats);
-      // Clear queue after successful processing
-      fileQueue = [];
-      updateFileQueueDisplay();
-    } else {
-      resultDiv.style.display = 'block';
-      resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${data.error}</div>`;
-    }
-  })
-  .catch(error => {
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${error.message}</div>`;
-  })
-  .finally(() => {
-    button.disabled = fileQueue.length === 0;
-    button.textContent = fileQueue.length > 0 ? `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)` : 'Clean Data (0 files queued)';
+      if (processedCount === files.length) {
+        displayProcessingSummary(results, resultDiv, button, originalText);
+        fileQueue = [];
+        updateFileQueueDisplay();
+      }
+    });
   });
+}
+
+function displayProcessingSummary(results, resultDiv, button, originalText) {
+  const successful = results.filter(r => r.success);
+  const failed = results.filter(r => !r.success);
+  
+  let html = `
+    <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:20px;margin-bottom:20px;">
+      <h3 style="margin:0 0 16px;color:#22c55e;font-size:20px;">📊 Processing Summary</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;font-size:14px;">
+        <div>
+          <strong style="color:#22c55e;">✅ Successful:</strong> ${successful.length} file${successful.length !== 1 ? 's' : ''}
+        </div>
+        ${failed.length > 0 ? `<div><strong style="color:#ef4444;">❌ Failed:</strong> ${failed.length} file${failed.length !== 1 ? 's' : ''}</div>` : ''}
+        <div>
+          <strong>📁 Total Processed:</strong> ${results.length} file${results.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Display results for each file
+  results.forEach((result, index) => {
+    if (result.success && result.data) {
+      html += `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+            <div>
+              <h4 style="margin:0 0 8px;font-size:18px;">${getFileIcon(result.filename)} ${result.filename}</h4>
+              <div style="font-size:13px;color:var(--muted);">
+                <strong>Rows:</strong> ${result.data.report.rows_in} → ${result.data.report.rows_out} | 
+                <strong>Duplicates Removed:</strong> ${result.data.report.duplicates_removed || 0} |
+                <strong>Irrelevant Removed:</strong> ${result.data.report.irrelevant_rows_removed || 0}
+              </div>
+            </div>
+            <span style="background:rgba(34,197,94,0.1);color:#22c55e;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:500;">✅ Success</span>
+          </div>
+          
+          ${buildFileExportSection(result.data, result.exportFormats, result.filename)}
+          ${result.data.column_files ? buildColumnFilesSection(result.data.column_files, result.filename.replace(/\.[^/.]+$/, '')) : ''}
+        </div>
+      `;
+    } else {
+      html += `
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:20px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;">
+            <div>
+              <h4 style="margin:0 0 8px;font-size:18px;color:#ef4444;">${getFileIcon(result.filename)} ${result.filename}</h4>
+              <p style="margin:0;color:#ef4444;">Error: ${result.error || 'Unknown error'}</p>
+            </div>
+            <span style="background:rgba(239,68,68,0.1);color:#ef4444;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:500;">❌ Failed</span>
+          </div>
+        </div>
+      `;
+    }
+  });
+  
+  resultDiv.innerHTML = html;
+  button.disabled = fileQueue.length === 0;
+  button.textContent = fileQueue.length > 0 ? `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)` : 'Clean Data (0 files queued)';
+}
+
+function buildFileExportSection(data, exportFormats, filename) {
+  const outputs = data.outputs || {};
+  const columnFiles = data.column_files || {};
+  const baseFilename = filename.replace(/\.[^/.]+$/, '');
+  
+  let html = `
+    <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:16px;">
+      <h5 style="margin:0 0 12px;font-size:16px;color:#3b82f6;">📥 Download Exports</h5>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:${exportFormats.includes('columns') && Object.keys(columnFiles).length > 0 ? '16px' : '0'};">
+  `;
+  
+  // Master file exports
+  if (exportFormats.includes('csv') && outputs.master_cleanse_csv) {
+    html += `<button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_csv.replace(/'/g, "\\'")}', '${baseFilename}_master_cleaned.csv', 'text/csv')" style="font-size:13px;">📄 Master CSV</button>`;
+  }
+  if (exportFormats.includes('json') && outputs.master_cleanse_json) {
+    html += `<button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_master_cleaned.json', 'application/json')" style="font-size:13px;">📋 Master JSON</button>`;
+  }
+  if (exportFormats.includes('excel') && outputs.master_cleanse_excel) {
+    html += `<button class="btn primary" onclick="downloadExcelFromBase64('${outputs.master_cleanse_excel}', '${baseFilename}_master_cleaned.xlsx')" style="font-size:13px;">📊 Master Excel</button>`;
+  }
+  
+  html += `</div>`;
+  
+  // Column-based files (always show - core feature for data verification)
+  if (Object.keys(columnFiles).length > 0) {
+    html += `
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(59,130,246,0.2);">
+        <h6 style="margin:0 0 12px;font-size:14px;color:#3b82f6;">📑 Column-Based Files (One per column)</h6>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+    `;
+    
+    for (const [colName, colData] of Object.entries(columnFiles)) {
+      const safeColName = colName.replace(/[^a-zA-Z0-9]/g, '_');
+      html += `
+        <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--bg);">
+          <div style="font-weight:500;font-size:13px;margin-bottom:8px;color:var(--text);">${colName}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', '${baseFilename}_column_${safeColName}.csv', 'text/csv')" style="font-size:11px;padding:4px 8px;">CSV</button>` : ''}
+            ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_column_${safeColName}.json', 'application/json')" style="font-size:11px;padding:4px 8px;">JSON</button>` : ''}
+            ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', '${baseFilename}_column_${safeColName}.xlsx')" style="font-size:11px;padding:4px 8px;">Excel</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    html += `</div></div>`;
+  }
+  
+  html += `</div>`;
+  
+  return html;
 }
 
 function displaySingleFileResult(data, resultDiv, exportFormats) {
@@ -2470,9 +2678,9 @@ function displaySingleFileResult(data, resultDiv, exportFormats) {
   const outputs = data.outputs || {};
   const exportButtons = buildExportButtons(outputs, data.report.file_type, exportFormats);
   
-  // Column files section
-  const columnFilesSection = data.column_files && exportFormats.includes('columns') ? 
-    buildColumnFilesSection(data.column_files) : '';
+  // Column files section (always show - core feature)
+  const columnFilesSection = data.column_files ? 
+    buildColumnFilesSection(data.column_files, 'cleaned_data') : '';
   
   resultDiv.innerHTML = `
     <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
@@ -2536,22 +2744,23 @@ function buildExportButtons(outputs, originalFileType, exportFormats) {
   return buttons.join('');
 }
 
-function buildColumnFilesSection(columnFiles) {
+function buildColumnFilesSection(columnFiles, baseFilename = 'cleaned_data') {
   let html = `
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <h3 style="margin:0 0 16px;font-size:18px;">📑 Column-Based Files</h3>
-      <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">Download individual column files for data verification:</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;">
+      <h3 style="margin:0 0 12px;font-size:18px;">📑 Column-Based Files</h3>
+      <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">One file per column for data verification - ensures no accidental deletions:</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
   `;
   
   for (const [colName, colData] of Object.entries(columnFiles)) {
+    const safeColName = colName.replace(/[^a-zA-Z0-9]/g, '_');
     html += `
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px;">
-        <div style="font-weight:500;margin-bottom:8px;font-size:14px;">${colName}</div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--bg);">
+        <div style="font-weight:500;font-size:13px;margin-bottom:8px;color:var(--text);">${colName}</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.csv', 'text/csv')" style="font-size:12px;padding:6px;">CSV</button>` : ''}
-          ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.json', 'application/json')" style="font-size:12px;padding:6px;">JSON</button>` : ''}
-          ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx')" style="font-size:12px;padding:6px;">Excel</button>` : ''}
+          ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', '${baseFilename}_column_${safeColName}.csv', 'text/csv')" style="font-size:11px;padding:4px 8px;">CSV</button>` : ''}
+          ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${baseFilename}_column_${safeColName}.json', 'application/json')" style="font-size:11px;padding:4px 8px;">JSON</button>` : ''}
+          ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', '${baseFilename}_column_${safeColName}.xlsx')" style="font-size:11px;padding:4px 8px;">Excel</button>` : ''}
         </div>
       </div>
     `;

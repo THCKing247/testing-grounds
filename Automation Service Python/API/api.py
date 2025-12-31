@@ -252,8 +252,8 @@ def data_clean():
                             outputs['master_cleanse_excel']
                         ).decode('utf-8')
                     
-                    # Column files (only if requested)
-                    if 'columns' in export_formats and outputs.get('column_files'):
+                    # Column files (always included - core feature for data verification)
+                    if outputs.get('column_files'):
                         for col_name, col_data in outputs['column_files'].items():
                             result_data['column_files'][col_name] = {}
                             if col_data.get('csv'):
