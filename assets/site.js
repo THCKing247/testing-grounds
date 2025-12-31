@@ -2096,15 +2096,10 @@ function loadServiceInterface(serviceId, container) {
   const serviceInterfaces = {
     'data-clean': renderDataCleanInterface,
     'voice-of-customer': renderVoiceOfCustomerInterface,
-    'content-ops': renderContentOpsInterface,
     'help-desk': renderHelpDeskInterface,
     'reputation-review': renderReputationReviewInterface,
     'missed-call': renderMissedCallInterface,
     'speed-to-lead': renderSpeedToLeadInterface,
-    'agency-toolkit': renderAgencyToolkitInterface,
-    'custom-gpts': renderCustomGPTsInterface,
-    'compliance-policy': renderCompliancePolicyInterface,
-    'vertical-lead-gen': renderVerticalLeadGenInterface,
     'lead-followup': renderLeadFollowupInterface
   };
 
@@ -3132,15 +3127,10 @@ function handleVoiceOfCustomer(event) {
 }
 
 // Placeholder interfaces for other services
-const renderContentOpsInterface = (c) => c.innerHTML = '<h2>✍️ AI Content Operations</h2><p>Service interface coming soon...</p>';
 const renderHelpDeskInterface = (c) => c.innerHTML = '<h2>🆘 AI Help Desk</h2><p>Service interface coming soon...</p>';
 const renderReputationReviewInterface = (c) => c.innerHTML = '<h2>⭐ Reputation Review Automation</h2><p>Service interface coming soon...</p>';
 const renderMissedCallInterface = (c) => c.innerHTML = '<h2>📞 Missed Call Automation</h2><p>Service interface coming soon...</p>';
 const renderSpeedToLeadInterface = (c) => c.innerHTML = '<h2>⚡ Speed to Lead Automation</h2><p>Service interface coming soon...</p>';
-const renderAgencyToolkitInterface = (c) => c.innerHTML = '<h2>🛠️ AI Automation Agency Toolkit</h2><p>Service interface coming soon...</p>';
-const renderCustomGPTsInterface = (c) => c.innerHTML = '<h2>🤖 Custom GPTs for Teams</h2><p>Service interface coming soon...</p>';
-const renderCompliancePolicyInterface = (c) => c.innerHTML = '<h2>📋 Compliance Policy Generator</h2><p>Service interface coming soon...</p>';
-const renderVerticalLeadGenInterface = (c) => c.innerHTML = '<h2>🎯 Vertical Lead Generation</h2><p>Service interface coming soon...</p>';
 const renderLeadFollowupInterface = (c) => c.innerHTML = '<h2>💬 AI Lead Follow-up & Nurture</h2><p>Service interface coming soon...</p>';
 
 // Initialize automation services when dashboard loads

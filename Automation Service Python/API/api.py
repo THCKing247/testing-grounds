@@ -37,15 +37,10 @@ def load_service(module_name, class_name):
 try:
     ApexDataCleanEngine = load_service('1_data_clean_engine.py', 'ApexDataCleanEngine')
     VoiceOfCustomerInsightsSystem = load_service('2_voice_of_customer.py', 'VoiceOfCustomerInsightsSystem')
-    AIContentOperationsSystem = load_service('3_ai_content_operations.py', 'AIContentOperationsSystem')
     AIHelpDesk = load_service('4_ai_help_desk.py', 'AIHelpDesk')
     ReputationReviewAutomationEngine = load_service('5_reputation_review_automation.py', 'ReputationReviewAutomationEngine')
     MissedCallAutomation = load_service('6_missed_call_automation.py', 'MissedCallAutomation')
     SpeedToLeadAutomationSystem = load_service('7_speed_to_lead_automation.py', 'SpeedToLeadAutomationSystem')
-    AIAutomationAgencyToolkit = load_service('8_ai_automation_agency_toolkit.py', 'AIAutomationAgencyToolkit')
-    CustomGPTsForTeams = load_service('9_custom_gpts_for_teams.py', 'CustomGPTsForTeams')
-    CompliancePolicyTrainingDocGenerator = load_service('10_compliance_policy_generator.py', 'CompliancePolicyTrainingDocGenerator')
-    VerticalLeadGenerationSystem = load_service('11_vertical_lead_generation.py', 'VerticalLeadGenerationSystem')
     AILeadFollowUpNurtureSystem = load_service('12_ai_lead_followup_nurture.py', 'AILeadFollowUpNurtureSystem')
 except Exception as e:
     print(f"Error loading services: {e}")
@@ -57,15 +52,10 @@ CORS(app)  # Enable CORS for frontend access
 # Initialize service instances
 data_clean_engine = ApexDataCleanEngine()
 voc_system = VoiceOfCustomerInsightsSystem()
-content_ops = AIContentOperationsSystem()
 help_desk = AIHelpDesk()
 reputation_engine = ReputationReviewAutomationEngine()
 missed_call = MissedCallAutomation()
 speed_to_lead = SpeedToLeadAutomationSystem()
-agency_toolkit = AIAutomationAgencyToolkit()
-custom_gpts = CustomGPTsForTeams()
-compliance_gen = CompliancePolicyTrainingDocGenerator()
-lead_gen = VerticalLeadGenerationSystem()
 lead_nurture = AILeadFollowUpNurtureSystem()
 
 
@@ -94,13 +84,6 @@ def list_services():
             'category': 'analytics'
         },
         {
-            'id': 'content-ops',
-            'name': 'AI Content Operations',
-            'description': 'Generates various types of content (emails, reports, documents)',
-            'icon': '✍️',
-            'category': 'content'
-        },
-        {
             'id': 'help-desk',
             'name': 'AI Help Desk',
             'description': 'Knowledge base system that retrieves relevant articles and drafts responses',
@@ -126,34 +109,6 @@ def list_services():
             'name': 'Speed to Lead Automation',
             'description': 'Automates rapid response to new leads',
             'icon': '⚡',
-            'category': 'sales'
-        },
-        {
-            'id': 'agency-toolkit',
-            'name': 'AI Automation Agency Toolkit',
-            'description': 'Comprehensive toolkit for automation agencies',
-            'icon': '🛠️',
-            'category': 'tools'
-        },
-        {
-            'id': 'custom-gpts',
-            'name': 'Custom GPTs for Teams',
-            'description': 'Creates custom GPT assistants for team workflows',
-            'icon': '🤖',
-            'category': 'ai'
-        },
-        {
-            'id': 'compliance-policy',
-            'name': 'Compliance Policy Generator',
-            'description': 'Generates compliance policies and training documents',
-            'icon': '📋',
-            'category': 'compliance'
-        },
-        {
-            'id': 'vertical-lead-gen',
-            'name': 'Vertical Lead Generation',
-            'description': 'Generates leads for specific verticals/industries',
-            'icon': '🎯',
             'category': 'sales'
         },
         {
@@ -350,32 +305,6 @@ def voice_of_customer():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
-@app.route('/api/services/content-ops', methods=['POST'])
-def content_ops_endpoint():
-    """AI Content Operations service"""
-    try:
-        data = request.get_json()
-        content_type = data.get('content_type', 'email')
-        notes = data.get('notes', '')
-        audience = data.get('audience', 'customer')
-        tone = data.get('tone', 'professional')
-        call_to_action = data.get('call_to_action')
-        subject = data.get('subject')
-        
-        result = content_ops.generate(
-            content_type=content_type,
-            notes=notes,
-            audience=audience,
-            tone=tone,
-            call_to_action=call_to_action,
-            subject=subject
-        )
-        
-        return jsonify({'success': True, 'result': result})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-
 @app.route('/api/services/help-desk', methods=['POST'])
 def help_desk_endpoint():
     """AI Help Desk service"""
@@ -475,97 +404,6 @@ def speed_to_lead_endpoint():
             phone=phone,
             source=source,
             message=message
-        )
-        
-        return jsonify({'success': True, 'result': result})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-
-@app.route('/api/services/agency-toolkit', methods=['POST'])
-def agency_toolkit_endpoint():
-    """AI Automation Agency Toolkit service"""
-    try:
-        data = request.get_json()
-        action = data.get('action')
-        workflow = data.get('workflow', {})
-        
-        if action == 'validate':
-            result = agency_toolkit.validate_workflow(workflow)
-            return jsonify({'success': True, 'result': result})
-        
-        elif action == 'plan':
-            result = agency_toolkit.plan(workflow)
-            return jsonify({'success': True, 'result': result})
-        
-        elif action == 'execute':
-            payload = data.get('payload', {})
-            result = agency_toolkit.execute(workflow, payload)
-            return jsonify({'success': True, 'result': result})
-        
-        else:
-            return jsonify({'success': False, 'error': 'Invalid action. Use "validate", "plan", or "execute"'}), 400
-            
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-
-@app.route('/api/services/custom-gpts', methods=['POST'])
-def custom_gpts_endpoint():
-    """Custom GPTs for Teams service"""
-    try:
-        data = request.get_json()
-        role = data.get('role', '')
-        team = data.get('team', '')
-        capabilities = data.get('capabilities')
-        boundaries = data.get('boundaries')
-        knowledge_sources = data.get('knowledge_sources')
-        
-        result = custom_gpts.generate_assistant_config(
-            role=role,
-            team=team,
-            capabilities=capabilities,
-            boundaries=boundaries,
-            knowledge_sources=knowledge_sources
-        )
-        
-        return jsonify({'success': True, 'result': result})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-
-@app.route('/api/services/compliance-policy', methods=['POST'])
-def compliance_policy():
-    """Compliance Policy Generator service"""
-    try:
-        data = request.get_json()
-        company = data.get('company', '')
-        policy_type = data.get('policy_type', 'gdpr')
-        
-        result = compliance_gen.generate(company=company, policy_type=policy_type)
-        
-        return jsonify({'success': True, 'result': result})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-
-@app.route('/api/services/vertical-lead-gen', methods=['POST'])
-def vertical_lead_gen():
-    """Vertical Lead Generation service"""
-    try:
-        data = request.get_json()
-        vertical = data.get('vertical', '')
-        leads = data.get('leads', [])
-        keywords = data.get('keywords')
-        min_score = data.get('min_score', 0.1)
-        limit = data.get('limit', 50)
-        
-        result = lead_gen.score_leads(
-            vertical=vertical,
-            leads=leads,
-            keywords=keywords,
-            min_score=min_score,
-            limit=limit
         )
         
         return jsonify({'success': True, 'result': result})

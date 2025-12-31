@@ -816,16 +816,17 @@ class ApexDataCleanEngine:
         num_rows = len(all_cleaned_rows)
         
         # For files with 50k+ rows, limit exports to prevent memory issues
+        # But always keep 'columns' in the list - we'll generate CSV-only column files
         if num_rows > 50000:
             # Only generate CSV and skip memory-intensive formats unless explicitly requested
             safe_formats = ['csv']
             if 'json' in export_formats and num_rows <= 100000:
                 safe_formats.append('json')
-            # Excel and column files are too memory-intensive for very large files
+            # Excel is too memory-intensive for very large files
             if 'excel' in export_formats and num_rows <= 50000:
                 safe_formats.append('excel')
-            # Column files only for smaller large files
-            if 'columns' in export_formats and num_rows <= 25000:
+            # Always include 'columns' - we'll generate CSV-only column files for large files
+            if 'columns' in export_formats:
                 safe_formats.append('columns')
             
             export_formats = safe_formats
@@ -888,16 +889,19 @@ class ApexDataCleanEngine:
                 outputs["master_cleanse_excel"] = None
                 outputs["_excel_skipped"] = f"Excel export skipped for files with {num_rows:,} rows to prevent memory issues"
         
-        # Generate column-based files (very memory-intensive for large files)
+        # Generate column-based files (always generate, but limit formats for large files)
         if 'columns' in export_formats:
-            if num_rows <= 25000:
-                column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
-                outputs["column_files"] = column_files
-            else:
-                # For very large files, only generate CSV column files
+            # For large files, only generate CSV column files to save memory
+            # For smaller files, generate all requested formats
+            if num_rows > 50000:
+                # Large files: CSV-only column files
                 column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, ['csv'])
                 outputs["column_files"] = column_files
                 outputs["_columns_note"] = f"Column files limited to CSV format for files with {num_rows:,} rows"
+            else:
+                # Smaller files: generate all requested formats
+                column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
+                outputs["column_files"] = column_files
         
         return outputs
     
