@@ -662,6 +662,7 @@ class ApexDataCleanEngine:
         apply_crm_mappings: bool = True,
         sheet_name: str | None = None,
         chunk_size: int = 10000,
+        export_formats: list[str] | None = None,
     ) -> tuple[dict[str, t.Any], DataCleanReport]:
         """
         Clean large files using streaming/chunked processing to handle millions of rows.
@@ -713,9 +714,10 @@ class ApexDataCleanEngine:
         headers_out = rows_list[0] if rows_list else raw_headers
         cleaned_rows = rows_list[1:] if len(rows_list) > 1 else []
         
-        # Generate multiple output formats
+        # Generate multiple output formats (only requested ones)
+        export_formats = export_formats or ['csv', 'json', 'excel', 'columns']
         outputs = self._generate_multiple_outputs(
-            cleaned_csv, raw_headers, detected_type, report, cleaned_rows, headers_out
+            cleaned_csv, raw_headers, detected_type, report, cleaned_rows, headers_out, export_formats
         )
         
         return outputs, report
@@ -808,8 +810,9 @@ class ApexDataCleanEngine:
             irrelevant_rows_removed=fixes.get("irrelevant_rows_removed", 0),
         )
         
+        export_formats = export_formats or ['csv', 'json', 'excel', 'columns']
         outputs = self._generate_multiple_outputs(
-            cleaned_csv, raw_headers, detected_type, report, all_cleaned_rows, headers_out
+            cleaned_csv, raw_headers, detected_type, report, all_cleaned_rows, headers_out, export_formats
         )
         
         return outputs, report
@@ -822,11 +825,11 @@ class ApexDataCleanEngine:
         report: DataCleanReport,
         cleaned_rows: list[list[str]] | None = None,
         headers_out: list[str] | None = None,
+        export_formats: list[str] | None = None,
     ) -> dict[str, t.Any]:
-        """Generate multiple output formats: CSV, JSON, Excel, and column-based files"""
-        outputs: dict[str, t.Any] = {
-            "master_cleanse_csv": cleaned_csv,
-        }
+        """Generate multiple output formats: CSV, JSON, Excel, and column-based files (only requested formats)"""
+        export_formats = export_formats or ['csv', 'json', 'excel', 'columns']
+        outputs: dict[str, t.Any] = {}
         
         # Parse cleaned CSV to get rows if not provided
         if cleaned_rows is None or headers_out is None:
@@ -838,21 +841,28 @@ class ApexDataCleanEngine:
             else:
                 return outputs
         
-        # Generate JSON output (especially for JSON input files)
-        json_output = self._rows_to_json(cleaned_rows, headers_out)
-        outputs["master_cleanse_json"] = json_output
+        # Generate CSV output (always include as base)
+        if 'csv' in export_formats:
+            outputs["master_cleanse_csv"] = cleaned_csv
+        
+        # Generate JSON output
+        if 'json' in export_formats:
+            json_output = self._rows_to_json(cleaned_rows, headers_out)
+            outputs["master_cleanse_json"] = json_output
         
         # Generate Excel output
-        try:
-            excel_output = self._rows_to_excel(cleaned_rows, headers_out)
-            outputs["master_cleanse_excel"] = excel_output
-        except Exception:
-            # Excel generation failed, skip it
-            pass
+        if 'excel' in export_formats:
+            try:
+                excel_output = self._rows_to_excel(cleaned_rows, headers_out)
+                outputs["master_cleanse_excel"] = excel_output
+            except Exception:
+                # Excel generation failed, skip it
+                pass
         
-        # Generate column-based files (one per column)
-        column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type)
-        outputs["column_files"] = column_files
+        # Generate column-based files (one per column) - only if requested
+        if 'columns' in export_formats:
+            column_files = self._generate_column_based_files(cleaned_rows, headers_out, original_file_type, export_formats)
+            outputs["column_files"] = column_files
         
         return outputs
     
@@ -895,33 +905,37 @@ class ApexDataCleanEngine:
         rows: list[list[str]],
         headers: list[str],
         original_file_type: str,
+        export_formats: list[str] | None = None,
     ) -> dict[str, dict[str, str | bytes]]:
         """Generate one file per column to ensure no accidental deletions"""
+        export_formats = export_formats or ['csv', 'json', 'excel']
         column_files: dict[str, dict[str, str | bytes]] = {}
         
         for col_idx, header in enumerate(headers):
             # Extract column data
             column_data = [row[col_idx] if col_idx < len(row) else "" for row in rows]
+            column_files[header] = {}
             
             # Create CSV file for this column
-            csv_rows = [[header]] + [[val] for val in column_data]
-            csv_content = self._rows_to_csv(csv_rows, ",")
+            if 'csv' in export_formats:
+                csv_rows = [[header]] + [[val] for val in column_data]
+                csv_content = self._rows_to_csv(csv_rows, ",")
+                column_files[header]["csv"] = csv_content
             
             # Create JSON file for this column
-            json_data = [{header: val} for val in column_data]
-            json_content = json.dumps(json_data, indent=2, ensure_ascii=False)
+            if 'json' in export_formats:
+                json_data = [{header: val} for val in column_data]
+                json_content = json.dumps(json_data, indent=2, ensure_ascii=False)
+                column_files[header]["json"] = json_content
             
             # Create Excel file for this column
-            try:
-                excel_content = self._rows_to_excel(csv_rows[1:], [header])
-            except:
-                excel_content = None
-            
-            column_files[header] = {
-                "csv": csv_content,
-                "json": json_content,
-                "excel": excel_content,
-            }
+            if 'excel' in export_formats:
+                try:
+                    csv_rows = [[header]] + [[val] for val in column_data]
+                    excel_content = self._rows_to_excel(csv_rows[1:], [header])
+                    column_files[header]["excel"] = excel_content
+                except:
+                    column_files[header]["excel"] = None
         
         return column_files
     

@@ -2117,6 +2117,9 @@ function loadServiceInterface(serviceId, container) {
 }
 
 // Service Interface Renderers
+// Global file queue for tracking uploaded files
+let fileQueue = [];
+
 function renderDataCleanInterface(container) {
   container.innerHTML = `
     <h2 style="margin:0 0 24px;font-size:28px;">🧹 Data Clean Engine</h2>
@@ -2136,7 +2139,8 @@ function renderDataCleanInterface(container) {
       <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:12px;margin-top:12px;">
         <strong style="color:#22c55e;">✨ New Features:</strong>
         <ul style="margin:8px 0 0 20px;font-size:13px;">
-          <li>Batch upload multiple files at once</li>
+          <li>Upload files individually or in bulk</li>
+          <li>Track all files before processing</li>
           <li>Handles files with 100,000+ entries (billions supported)</li>
           <li>Multiple export formats (CSV, JSON, Excel)</li>
           <li>Column-based files for data verification</li>
@@ -2144,9 +2148,9 @@ function renderDataCleanInterface(container) {
       </div>
     </div>
     
-    <form id="data-clean-form" enctype="multipart/form-data" onsubmit="handleDataClean(event)">
+    <form id="data-clean-form" enctype="multipart/form-data">
       <div class="form-group" style="margin-bottom:20px;">
-        <label style="display:block;margin-bottom:8px;font-weight:500;">Upload Files (Multiple files supported)</label>
+        <label style="display:block;margin-bottom:8px;font-weight:500;">Upload Files</label>
         <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;background:var(--bg);transition:all 0.2s;" 
              id="file-drop-zone" 
              ondrop="handleFileDrop(event)" 
@@ -2157,9 +2161,19 @@ function renderDataCleanInterface(container) {
           <div style="font-size:48px;margin-bottom:12px;">📁</div>
           <p style="margin:0 0 12px;color:var(--muted);">Drag and drop files here, or</p>
           <button type="button" class="btn" onclick="document.getElementById('data-file').click()">Browse Files</button>
-          <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">You can select multiple files at once</p>
-          <div id="file-list" style="margin-top:16px;display:none;">
-            <div id="file-items" style="text-align:left;"></div>
+          <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">Select multiple files at once or add them individually</p>
+        </div>
+      </div>
+      
+      <!-- File Queue Display -->
+      <div id="file-queue-section" style="margin-bottom:20px;display:none;">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:18px;">📋 File Queue (<span id="queue-count">0</span> files)</h3>
+            <button type="button" class="btn" onclick="clearFileQueue()" style="font-size:12px;padding:6px 12px;">Clear All</button>
+          </div>
+          <div id="file-queue-list" style="max-height:300px;overflow-y:auto;">
+            <!-- File queue items will be inserted here -->
           </div>
         </div>
       </div>
@@ -2203,17 +2217,47 @@ function renderDataCleanInterface(container) {
         </label>
       </div>
       
-      <button type="submit" class="btn primary" style="width:100%;">Clean Data</button>
+      <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:16px;margin-bottom:20px;">
+        <h3 style="margin:0 0 12px;font-size:16px;color:#3b82f6;">📥 Export Formats</h3>
+        <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Select which formats you want to export (you can select multiple):</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
+            <input type="checkbox" id="export-csv" name="export_formats" value="csv" checked>
+            <span>📄 CSV</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
+            <input type="checkbox" id="export-json" name="export_formats" value="json" checked>
+            <span>📋 JSON</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
+            <input type="checkbox" id="export-excel" name="export_formats" value="excel" checked>
+            <span>📊 Excel</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--card-bg);border-radius:6px;">
+            <input type="checkbox" id="export-columns" name="export_formats" value="columns">
+            <span>📑 Column Files</span>
+          </label>
+        </div>
+        <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">💡 Column Files: One file per column for data verification</p>
+      </div>
+      
+      <button type="button" id="process-files-btn" class="btn primary" style="width:100%;" onclick="processFileQueue()" disabled>Clean Data (0 files queued)</button>
     </form>
     
     <div id="data-clean-result" style="margin-top:24px;display:none;"></div>
   `;
+  
+  // Reset file queue when interface is rendered
+  fileQueue = [];
+  updateFileQueueDisplay();
 }
 
 function handleFileSelect(event) {
   const files = Array.from(event.target.files);
   if (files.length > 0) {
-    displayFileList(files);
+    addFilesToQueue(files);
+    // Reset the file input so the same file can be selected again
+    event.target.value = '';
   }
 }
 
@@ -2222,44 +2266,63 @@ function handleFileDrop(event) {
   event.currentTarget.style.borderColor = 'var(--border)';
   const files = Array.from(event.dataTransfer.files);
   if (files.length > 0) {
-    const fileInput = document.getElementById('data-file');
-    const dataTransfer = new DataTransfer();
-    files.forEach(file => dataTransfer.items.add(file));
-    fileInput.files = dataTransfer.files;
-    displayFileList(files);
+    addFilesToQueue(files);
   }
 }
 
-function displayFileList(files) {
-  const fileList = document.getElementById('file-list');
-  const fileItems = document.getElementById('file-items');
+function addFilesToQueue(files) {
+  // Add files to queue, avoiding duplicates by name
+  const existingNames = new Set(fileQueue.map(f => f.name));
+  const newFiles = files.filter(file => !existingNames.has(file.name));
   
-  fileItems.innerHTML = files.map((file, index) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;">
-      <div style="flex:1;">
-        <div style="font-weight:500;font-size:14px;">${file.name}</div>
-        <div style="font-size:12px;color:var(--muted);">${formatFileSize(file.size)}</div>
-      </div>
-      <button type="button" onclick="removeFile(${index})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0 8px;">✕</button>
-    </div>
-  `).join('');
-  
-  fileList.style.display = 'block';
+  fileQueue.push(...newFiles);
+  updateFileQueueDisplay();
 }
 
-function removeFile(index) {
-  const fileInput = document.getElementById('data-file');
-  const files = Array.from(fileInput.files);
-  files.splice(index, 1);
+function removeFileFromQueue(index) {
+  fileQueue.splice(index, 1);
+  updateFileQueueDisplay();
+}
+
+function clearFileQueue() {
+  fileQueue = [];
+  updateFileQueueDisplay();
+}
+
+function updateFileQueueDisplay() {
+  const queueSection = document.getElementById('file-queue-section');
+  const queueList = document.getElementById('file-queue-list');
+  const queueCount = document.getElementById('queue-count');
+  const processBtn = document.getElementById('process-files-btn');
   
-  const dataTransfer = new DataTransfer();
-  files.forEach(file => dataTransfer.items.add(file));
-  fileInput.files = dataTransfer.files;
+  if (!queueSection || !queueList || !queueCount || !processBtn) return;
   
-  if (files.length > 0) {
-    displayFileList(files);
+  if (fileQueue.length === 0) {
+    queueSection.style.display = 'none';
+    processBtn.disabled = true;
+    processBtn.textContent = 'Clean Data (0 files queued)';
   } else {
-    document.getElementById('file-list').style.display = 'none';
+    queueSection.style.display = 'block';
+    queueCount.textContent = fileQueue.length;
+    processBtn.disabled = false;
+    processBtn.textContent = `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)`;
+    
+    queueList.innerHTML = fileQueue.map((file, index) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;">
+        <div style="flex:1;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:24px;">📄</div>
+          <div style="flex:1;">
+            <div style="font-weight:500;font-size:14px;margin-bottom:4px;">${file.name}</div>
+            <div style="font-size:12px;color:var(--muted);">${formatFileSize(file.size)}</div>
+          </div>
+        </div>
+        <button type="button" onclick="removeFileFromQueue(${index})" 
+                style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0 12px;transition:color 0.2s;"
+                onmouseover="this.style.color='#ef4444'" 
+                onmouseout="this.style.color='var(--muted)'"
+                title="Remove from queue">✕</button>
+      </div>
+    `).join('');
   }
 }
 
@@ -2276,38 +2339,55 @@ function clearFileSelection() {
   document.getElementById('file-list').style.display = 'none';
 }
 
-function handleDataClean(event) {
-  event.preventDefault();
-  const form = event.target;
+function processFileQueue() {
   const resultDiv = document.getElementById('data-clean-result');
-  const button = form.querySelector('button[type="submit"]');
-  
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Processing...';
-  
-  const fileInput = document.getElementById('data-file');
-  const file = fileInput.files[0];
+  const button = document.getElementById('process-files-btn');
   const csvText = document.getElementById('csv-text').value;
   
-  // Check if file or text was provided
-  if (!file && !csvText.trim()) {
+  // Check if files are queued or text was provided
+  if (fileQueue.length === 0 && !csvText.trim()) {
     resultDiv.style.display = 'block';
-    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please upload a file or paste CSV content.</div>`;
-    button.disabled = false;
-    button.textContent = originalText;
+    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please add files to the queue or paste CSV content.</div>`;
     return;
   }
   
+  // Get selected export formats
+  const exportFormats = Array.from(document.querySelectorAll('input[name="export_formats"]:checked')).map(cb => cb.value);
+  if (exportFormats.length === 0) {
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Please select at least one export format.</div>`;
+    return;
+  }
+  
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = `Processing ${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''}...`;
+  
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `
+    <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:24px;height:24px;border:3px solid rgba(59,130,246,0.3);border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <div>
+          <strong style="color:#3b82f6;">Processing ${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''}...</strong>
+          <p style="margin:4px 0 0;color:var(--muted);font-size:14px;">Please wait while we clean your data</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
   const formData = new FormData();
   
-  if (file) {
-    // File upload mode
-    formData.append('file', file);
+  if (fileQueue.length > 0) {
+    // File upload mode - use queued files
+    fileQueue.forEach(file => {
+      formData.append('files[]', file);
+    });
     formData.append('delimiter', document.getElementById('delimiter').value || ',');
     formData.append('normalize_headers', document.getElementById('normalize-headers').checked);
     formData.append('drop_empty_rows', document.getElementById('drop-empty-rows').checked);
     formData.append('apply_crm_mappings', document.getElementById('apply-crm-mappings').checked);
+    formData.append('export_formats', exportFormats.join(','));
     const fileType = document.getElementById('file-type').value;
     if (fileType) {
       formData.append('file_type', fileType);
@@ -2322,62 +2402,31 @@ function handleDataClean(event) {
   
   fetch(`${API_BASE_URL}/services/data-clean`, {
     method: 'POST',
-    body: file ? formData : JSON.stringify({
+    body: fileQueue.length > 0 ? formData : JSON.stringify({
       csv_text: csvText,
       delimiter: document.getElementById('delimiter').value || ',',
       normalize_headers: document.getElementById('normalize-headers').checked,
       drop_empty_rows: document.getElementById('drop-empty-rows').checked
     }),
-    headers: file ? {} : { 'Content-Type': 'application/json' }
+    headers: fileQueue.length > 0 ? {} : { 'Content-Type': 'application/json' }
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      resultDiv.style.display = 'block';
-      const crmInfo = data.report.crm_detected ? 
-        `<div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <strong>CRM Detected:</strong> ${data.report.crm_detected.charAt(0).toUpperCase() + data.report.crm_detected.slice(1)}
-        </div>` : '';
+      // Handle batch results
+      if (data.batch && data.results) {
+        displayBatchResults(data.results, resultDiv, button, originalText);
+        // Clear queue after successful processing
+        fileQueue = [];
+        updateFileQueueDisplay();
+        return;
+      }
       
-      const fixesInfo = Object.entries(data.report.fixes)
-        .filter(([key, value]) => value > 0)
-        .map(([key, value]) => `<div><strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}</div>`)
-        .join('');
-      
-      const duplicatesRemoved = data.report.duplicates_removed || 0;
-      const irrelevantRemoved = data.report.irrelevant_rows_removed || 0;
-      const cleanupInfo = (duplicatesRemoved > 0 || irrelevantRemoved > 0) ? `
-        <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:12px;margin-top:12px;">
-          <strong style="color:#3b82f6;">Data Cleanup:</strong>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">
-            ${duplicatesRemoved > 0 ? `<div><strong>Duplicates Removed:</strong> ${duplicatesRemoved}</div>` : ''}
-            ${irrelevantRemoved > 0 ? `<div><strong>Irrelevant Rows Removed:</strong> ${irrelevantRemoved}</div>` : ''}
-          </div>
-        </div>
-      ` : '';
-      
-      resultDiv.innerHTML = `
-        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
-          <h3 style="margin:0 0 12px;color:#22c55e;">✅ Data Cleaned Successfully</h3>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px;margin-bottom:12px;">
-            <div><strong>Rows:</strong> ${data.report.rows_in} → ${data.report.rows_out}</div>
-            <div><strong>Columns:</strong> ${data.report.columns_in} → ${data.report.columns_out}</div>
-            <div><strong>File Type:</strong> ${data.report.file_type.toUpperCase()}</div>
-            <div><strong>Processing Time:</strong> ${new Date(data.report.finished_at).getTime() - new Date(data.report.started_at).getTime()}ms</div>
-          </div>
-          ${crmInfo}
-          ${cleanupInfo}
-          ${fixesInfo ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.2);"><strong>Fixes Applied:</strong><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">${fixesInfo}</div></div>` : ''}
-        </div>
-        <div style="margin-bottom:16px;">
-          <label style="display:block;margin-bottom:8px;font-weight:500;">Cleaned Data (CSV):</label>
-          <textarea readonly rows="10" id="cleaned-csv-output" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);font-size:12px;">${data.cleaned_csv}</textarea>
-        </div>
-        <div style="display:flex;gap:12px;">
-          <button class="btn primary" onclick="downloadCleanedFile('${data.report.file_type}', document.getElementById('cleaned-csv-output').value)">Download Cleaned File</button>
-          <button class="btn" onclick="copyToClipboard(document.getElementById('cleaned-csv-output').value)">Copy to Clipboard</button>
-        </div>
-      `;
+      // Single file result
+      displaySingleFileResult(data, resultDiv, exportFormats);
+      // Clear queue after successful processing
+      fileQueue = [];
+      updateFileQueueDisplay();
     } else {
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${data.error}</div>`;
@@ -2388,28 +2437,219 @@ function handleDataClean(event) {
     resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;color:#ef4444;">Error: ${error.message}</div>`;
   })
   .finally(() => {
-    button.disabled = false;
-    button.textContent = originalText;
+    button.disabled = fileQueue.length === 0;
+    button.textContent = fileQueue.length > 0 ? `Clean Data (${fileQueue.length} file${fileQueue.length > 1 ? 's' : ''} queued)` : 'Clean Data (0 files queued)';
   });
 }
 
-function downloadCleanedFile(originalFileType, content) {
-  // Determine file extension based on original type
-  let extension = 'csv';
-  let mimeType = 'text/csv;charset=utf-8;';
+function displaySingleFileResult(data, resultDiv, exportFormats) {
+  resultDiv.style.display = 'block';
+  const crmInfo = data.report.crm_detected ? 
+    `<div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
+      <strong>CRM Detected:</strong> ${data.report.crm_detected.charAt(0).toUpperCase() + data.report.crm_detected.slice(1)}
+    </div>` : '';
   
-  if (originalFileType === 'json') {
-    // For JSON files, we can offer both CSV and JSON download
-    // But since we cleaned to CSV format, we'll download as CSV
-    extension = 'csv';
-  } else if (originalFileType === 'excel') {
-    extension = 'csv'; // Excel is converted to CSV for cleaning
-  } else if (originalFileType === 'tsv') {
-    extension = 'csv'; // TSV is converted to CSV
+  const fixesInfo = Object.entries(data.report.fixes)
+    .filter(([key, value]) => value > 0)
+    .map(([key, value]) => `<div><strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}</div>`)
+    .join('');
+  
+  const duplicatesRemoved = data.report.duplicates_removed || 0;
+  const irrelevantRemoved = data.report.irrelevant_rows_removed || 0;
+  const cleanupInfo = (duplicatesRemoved > 0 || irrelevantRemoved > 0) ? `
+    <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:12px;margin-top:12px;">
+      <strong style="color:#3b82f6;">Data Cleanup:</strong>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">
+        ${duplicatesRemoved > 0 ? `<div><strong>Duplicates Removed:</strong> ${duplicatesRemoved}</div>` : ''}
+        ${irrelevantRemoved > 0 ? `<div><strong>Irrelevant Rows Removed:</strong> ${irrelevantRemoved}</div>` : ''}
+      </div>
+    </div>
+  ` : '';
+  
+  // Build export buttons based on available outputs and selected formats
+  const outputs = data.outputs || {};
+  const exportButtons = buildExportButtons(outputs, data.report.file_type, exportFormats);
+  
+  // Column files section
+  const columnFilesSection = data.column_files && exportFormats.includes('columns') ? 
+    buildColumnFilesSection(data.column_files) : '';
+  
+  resultDiv.innerHTML = `
+    <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;color:#22c55e;">✅ Data Cleaned Successfully</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px;margin-bottom:12px;">
+        <div><strong>Rows:</strong> ${data.report.rows_in} → ${data.report.rows_out}</div>
+        <div><strong>Columns:</strong> ${data.report.columns_in} → ${data.report.columns_out}</div>
+        <div><strong>File Type:</strong> ${data.report.file_type.toUpperCase()}</div>
+        <div><strong>Processing Time:</strong> ${new Date(data.report.finished_at).getTime() - new Date(data.report.started_at).getTime()}ms</div>
+      </div>
+      ${crmInfo}
+      ${cleanupInfo}
+      ${fixesInfo ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.2);"><strong>Fixes Applied:</strong><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">${fixesInfo}</div></div>` : ''}
+    </div>
+    
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 16px;font-size:18px;">📥 Download Exports</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+        ${exportButtons}
+      </div>
+    </div>
+    
+    ${columnFilesSection}
+    
+    ${outputs.master_cleanse_csv ? `
+    <div style="margin-bottom:16px;">
+      <label style="display:block;margin-bottom:8px;font-weight:500;">Preview (CSV):</label>
+      <textarea readonly rows="8" id="cleaned-csv-output" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);font-size:12px;">${outputs.master_cleanse_csv.substring(0, 2000)}${outputs.master_cleanse_csv.length > 2000 ? '...' : ''}</textarea>
+    </div>
+    ` : ''}
+  `;
+}
+
+function buildExportButtons(outputs, originalFileType, exportFormats) {
+  const buttons = [];
+  
+  if (exportFormats.includes('csv') && outputs.master_cleanse_csv) {
+    buttons.push(`
+      <button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_csv.replace(/'/g, "\\'")}', 'cleaned_data.csv', 'text/csv')" style="width:100%;">
+        📄 Download CSV
+      </button>
+    `);
   }
   
-  const filename = `cleaned_data.${extension}`;
-  downloadCSV(content, filename);
+  if (exportFormats.includes('json') && outputs.master_cleanse_json) {
+    buttons.push(`
+      <button class="btn primary" onclick="downloadFile('${outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'cleaned_data.json', 'application/json')" style="width:100%;">
+        📋 Download JSON
+      </button>
+    `);
+  }
+  
+  if (exportFormats.includes('excel') && outputs.master_cleanse_excel) {
+    buttons.push(`
+      <button class="btn primary" onclick="downloadExcelFromBase64('${outputs.master_cleanse_excel}', 'cleaned_data.xlsx')" style="width:100%;">
+        📊 Download Excel
+      </button>
+    `);
+  }
+  
+  return buttons.join('');
+}
+
+function buildColumnFilesSection(columnFiles) {
+  let html = `
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 16px;font-size:18px;">📑 Column-Based Files</h3>
+      <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">Download individual column files for data verification:</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;">
+  `;
+  
+  for (const [colName, colData] of Object.entries(columnFiles)) {
+    html += `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-weight:500;margin-bottom:8px;font-size:14px;">${colName}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${colData.csv ? `<button class="btn" onclick="downloadFile('${colData.csv.replace(/'/g, "\\'")}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.csv', 'text/csv')" style="font-size:12px;padding:6px;">CSV</button>` : ''}
+          ${colData.json ? `<button class="btn" onclick="downloadFile('${colData.json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.json', 'application/json')" style="font-size:12px;padding:6px;">JSON</button>` : ''}
+          ${colData.excel ? `<button class="btn" onclick="downloadExcelFromBase64('${colData.excel}', 'column_${colName.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx')" style="font-size:12px;padding:6px;">Excel</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+function displayBatchResults(results, resultDiv, button, originalText) {
+  resultDiv.style.display = 'block';
+  let html = `
+    <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;color:#22c55e;">✅ Batch Processing Complete</h3>
+      <p style="margin:0;font-size:14px;">Processed ${results.length} file(s)</p>
+    </div>
+  `;
+  
+  results.forEach((result, index) => {
+    if (result.success) {
+      html += `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+          <h4 style="margin:0 0 12px;">${result.filename}</h4>
+          <div style="font-size:14px;margin-bottom:12px;">
+            <strong>Rows:</strong> ${result.report.rows_in} → ${result.report.rows_out} | 
+            <strong>Duplicates Removed:</strong> ${result.report.duplicates_removed || 0}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${result.outputs.master_cleanse_csv ? `<button class="btn" onclick="downloadFile('${result.outputs.master_cleanse_csv.replace(/'/g, "\\'")}', '${result.filename}_cleaned.csv', 'text/csv')">CSV</button>` : ''}
+            ${result.outputs.master_cleanse_json ? `<button class="btn" onclick="downloadFile('${result.outputs.master_cleanse_json.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', '${result.filename}_cleaned.json', 'application/json')">JSON</button>` : ''}
+            ${result.outputs.master_cleanse_excel ? `<button class="btn" onclick="downloadExcelFromBase64('${result.outputs.master_cleanse_excel}', '${result.filename}_cleaned.xlsx')">Excel</button>` : ''}
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+          <h4 style="margin:0 0 8px;color:#ef4444;">${result.filename}</h4>
+          <p style="margin:0;color:#ef4444;">Error: ${result.error}</p>
+        </div>
+      `;
+    }
+  });
+  
+  resultDiv.innerHTML = html;
+  button.disabled = false;
+  button.textContent = originalText;
+}
+
+function downloadFile(content, filename, mimeType) {
+  try {
+    const blob = new Blob([content], { type: mimeType + ';charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Download error:', error);
+    const dataUri = `data:${mimeType};charset=utf-8,` + encodeURIComponent(content);
+    const a = document.createElement('a');
+    a.href = dataUri;
+    a.download = filename;
+    a.click();
+  }
+}
+
+function downloadExcelFromBase64(base64Data, filename) {
+  try {
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Excel download error:', error);
+    alert('Error downloading Excel file. Please try again.');
+  }
+}
+
+function downloadCleanedFile(originalFileType, content) {
+  downloadFile(content, `cleaned_data.${originalFileType === 'json' ? 'json' : 'csv'}`, originalFileType === 'json' ? 'application/json' : 'text/csv');
 }
 
 function copyToClipboard(text) {

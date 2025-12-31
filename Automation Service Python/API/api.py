@@ -188,6 +188,10 @@ def data_clean():
             file_type = request.form.get('file_type')
             sheet_name = request.form.get('sheet_name')
             
+            # Get export format preferences
+            export_formats_str = request.form.get('export_formats', 'csv,json,excel')
+            export_formats = [f.strip() for f in export_formats_str.split(',')] if export_formats_str else ['csv']
+            
             # Process all files
             results = []
             for file in files:
@@ -209,17 +213,15 @@ def data_clean():
                         apply_crm_mappings=apply_crm_mappings,
                         sheet_name=sheet_name if sheet_name else None,
                         chunk_size=10000,  # Process in 10k row chunks
+                        export_formats=export_formats,  # Only generate requested formats
                     )
                     
-                    # Encode binary data for JSON response
+                    # Filter outputs based on user's export format preferences
+                    import base64
                     result_data = {
                         'filename': filename,
                         'success': True,
-                        'outputs': {
-                            'master_cleanse_csv': outputs.get('master_cleanse_csv', ''),
-                            'master_cleanse_json': outputs.get('master_cleanse_json', ''),
-                            'master_cleanse_excel': None,  # Will be sent as base64
-                        },
+                        'outputs': {},
                         'column_files': {},
                         'report': {
                             'rows_in': report.rows_in,
@@ -238,21 +240,30 @@ def data_clean():
                         }
                     }
                     
-                    # Encode Excel files as base64
-                    import base64
-                    if outputs.get('master_cleanse_excel'):
+                    # Only include requested export formats
+                    if 'csv' in export_formats and outputs.get('master_cleanse_csv'):
+                        result_data['outputs']['master_cleanse_csv'] = outputs['master_cleanse_csv']
+                    
+                    if 'json' in export_formats and outputs.get('master_cleanse_json'):
+                        result_data['outputs']['master_cleanse_json'] = outputs['master_cleanse_json']
+                    
+                    if 'excel' in export_formats and outputs.get('master_cleanse_excel'):
                         result_data['outputs']['master_cleanse_excel'] = base64.b64encode(
                             outputs['master_cleanse_excel']
                         ).decode('utf-8')
                     
-                    # Encode column files
-                    if outputs.get('column_files'):
+                    # Column files (only if requested)
+                    if 'columns' in export_formats and outputs.get('column_files'):
                         for col_name, col_data in outputs['column_files'].items():
-                            result_data['column_files'][col_name] = {
-                                'csv': col_data.get('csv', ''),
-                                'json': col_data.get('json', ''),
-                                'excel': base64.b64encode(col_data['excel']).decode('utf-8') if col_data.get('excel') else None,
-                            }
+                            result_data['column_files'][col_name] = {}
+                            if col_data.get('csv'):
+                                result_data['column_files'][col_name]['csv'] = col_data['csv']
+                            if col_data.get('json'):
+                                result_data['column_files'][col_name]['json'] = col_data['json']
+                            if col_data.get('excel'):
+                                result_data['column_files'][col_name]['excel'] = base64.b64encode(
+                                    col_data['excel']
+                                ).decode('utf-8')
                     
                     results.append(result_data)
                     
