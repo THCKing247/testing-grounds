@@ -37,6 +37,8 @@ class DataCleanReport:
     file_type: str = "csv"
     crm_detected: str | None = None
     field_mappings: dict[str, str] = dataclasses.field(default_factory=dict)
+    duplicates_removed: int = 0
+    irrelevant_rows_removed: int = 0
 
 
 class ApexDataCleanEngine:
@@ -126,6 +128,8 @@ class ApexDataCleanEngine:
             "normalized_numbers": 0,
             "empties_to_blank": 0,
             "dropped_empty_rows": 0,
+            "duplicates_removed": 0,
+            "irrelevant_rows_removed": 0,
         }
 
         inp = io.StringIO(csv_text)
@@ -205,21 +209,43 @@ class ApexDataCleanEngine:
                 rr = head + [delimiter.join(tail)]
             return rr[:target_cols]
 
-        out_rows: list[list[str]] = [headers_out]
-        rows_out_count = 0
+        # Process and clean rows
+        cleaned_rows: list[list[str]] = []
         for r in data_rows:
             rr = reconcile_row_length(list(r), len(raw_headers))
             rr2 = [norm_cell(c) for c in rr]
+            
+            # Drop completely empty rows
             if drop_empty_rows and all(c == "" for c in rr2):
                 fixes["dropped_empty_rows"] += 1
                 continue
-            out_rows.append(rr2)
-            rows_out_count += 1
-
+            
+            # Filter irrelevant rows (rows with too many empty cells or test data)
+            if self._is_irrelevant_row(rr2, len(headers_out)):
+                fixes["irrelevant_rows_removed"] += 1
+                continue
+            
+            cleaned_rows.append(rr2)
+        
+        # Remove duplicates
+        seen_rows: set[tuple[str, ...]] = set()
+        deduplicated_rows: list[list[str]] = []
+        for row in cleaned_rows:
+            # Create a tuple for hashing (normalize whitespace)
+            row_tuple = tuple(c.strip().lower() if c else "" for c in row)
+            if row_tuple not in seen_rows:
+                seen_rows.add(row_tuple)
+                deduplicated_rows.append(row)
+            else:
+                fixes["duplicates_removed"] += 1
+        
+        out_rows: list[list[str]] = [headers_out] + deduplicated_rows
+        rows_out_count = len(deduplicated_rows)
+        
         out = io.StringIO()
         writer = csv.writer(out, delimiter=delimiter, lineterminator="\n")
         writer.writerows(out_rows)
-
+        
         finished = utc_now_iso()
         report = DataCleanReport(
             rows_in=len(data_rows),
@@ -230,6 +256,8 @@ class ApexDataCleanEngine:
             fixes=fixes,
             started_at=started,
             finished_at=finished,
+            duplicates_removed=fixes.get("duplicates_removed", 0),
+            irrelevant_rows_removed=fixes.get("irrelevant_rows_removed", 0),
         )
         return out.getvalue(), report
 
@@ -438,6 +466,8 @@ class ApexDataCleanEngine:
             "normalized_numbers": 0,
             "empties_to_blank": 0,
             "dropped_empty_rows": 0,
+            "duplicates_removed": 0,
+            "irrelevant_rows_removed": 0,
         }
         
         header_map: dict[str, str] = {h: headers_out[i] for i, h in enumerate(raw_headers)}
@@ -499,16 +529,38 @@ class ApexDataCleanEngine:
                 rr = head + [delimiter.join(tail)]
             return rr[:target_cols]
         
-        out_rows: list[list[str]] = [headers_out]
-        rows_out_count = 0
+        # Process and clean rows
+        cleaned_rows: list[list[str]] = []
         for r in data_rows:
             rr = reconcile_row_length(list(r), len(raw_headers))
             rr2 = [norm_cell(c) for c in rr]
+            
+            # Drop completely empty rows
             if drop_empty_rows and all(c == "" for c in rr2):
                 fixes["dropped_empty_rows"] += 1
                 continue
-            out_rows.append(rr2)
-            rows_out_count += 1
+            
+            # Filter irrelevant rows (rows with too many empty cells or test data)
+            if self._is_irrelevant_row(rr2, len(headers_out)):
+                fixes["irrelevant_rows_removed"] += 1
+                continue
+            
+            cleaned_rows.append(rr2)
+        
+        # Remove duplicates
+        seen_rows: set[tuple[str, ...]] = set()
+        deduplicated_rows: list[list[str]] = []
+        for row in cleaned_rows:
+            # Create a tuple for hashing (normalize whitespace)
+            row_tuple = tuple(c.strip().lower() if c else "" for c in row)
+            if row_tuple not in seen_rows:
+                seen_rows.add(row_tuple)
+                deduplicated_rows.append(row)
+            else:
+                fixes["duplicates_removed"] += 1
+        
+        out_rows: list[list[str]] = [headers_out] + deduplicated_rows
+        rows_out_count = len(deduplicated_rows)
         
         out = io.StringIO()
         writer = csv.writer(out, delimiter=delimiter, lineterminator="\n")
@@ -527,8 +579,46 @@ class ApexDataCleanEngine:
             file_type=detected_type,
             crm_detected=crm_type,
             field_mappings=field_mappings,
+            duplicates_removed=fixes.get("duplicates_removed", 0),
+            irrelevant_rows_removed=fixes.get("irrelevant_rows_removed", 0),
         )
         return out.getvalue(), report
+    
+    def _is_irrelevant_row(self, row: list[str], num_columns: int) -> bool:
+        """
+        Determine if a row is irrelevant and should be removed.
+        Criteria:
+        - More than 80% empty cells
+        - Contains common test data indicators
+        - Only contains whitespace or special characters
+        """
+        if not row:
+            return True
+        
+        # Count non-empty cells
+        non_empty_count = sum(1 for cell in row if cell and cell.strip())
+        empty_percentage = (num_columns - non_empty_count) / max(num_columns, 1)
+        
+        # Remove rows with more than 80% empty cells
+        if empty_percentage > 0.8:
+            return True
+        
+        # Check for test data indicators
+        test_indicators = [
+            "test", "example", "sample", "dummy", "placeholder",
+            "lorem ipsum", "xxx", "aaa", "123", "test@test.com"
+        ]
+        row_text = " ".join(cell.lower() for cell in row if cell)
+        if any(indicator in row_text for indicator in test_indicators):
+            # Only remove if it's clearly test data (not just containing the word)
+            if any(row_text.startswith(ind) or row_text.endswith(ind) for ind in test_indicators):
+                return True
+        
+        # Remove rows that are only whitespace/special characters
+        if non_empty_count == 0:
+            return True
+        
+        return False
 
     def _try_parse_date_to_iso(self, value: str) -> str | None:
         value = value.strip()

@@ -214,6 +214,8 @@ def data_clean():
                     'file_type': report.file_type,
                     'crm_detected': report.crm_detected,
                     'field_mappings': report.field_mappings,
+                    'duplicates_removed': getattr(report, 'duplicates_removed', 0),
+                    'irrelevant_rows_removed': getattr(report, 'irrelevant_rows_removed', 0),
                 }
             })
         
@@ -253,6 +255,8 @@ def data_clean():
                     'file_type': getattr(report, 'file_type', 'csv'),
                     'crm_detected': getattr(report, 'crm_detected', None),
                     'field_mappings': getattr(report, 'field_mappings', {}),
+                    'duplicates_removed': getattr(report, 'duplicates_removed', 0),
+                    'irrelevant_rows_removed': getattr(report, 'irrelevant_rows_removed', 0),
                 }
             })
         else:

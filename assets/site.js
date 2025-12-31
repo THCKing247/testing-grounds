@@ -2315,6 +2315,18 @@ function handleDataClean(event) {
         .map(([key, value]) => `<div><strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}</div>`)
         .join('');
       
+      const duplicatesRemoved = data.report.duplicates_removed || 0;
+      const irrelevantRemoved = data.report.irrelevant_rows_removed || 0;
+      const cleanupInfo = (duplicatesRemoved > 0 || irrelevantRemoved > 0) ? `
+        <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:12px;margin-top:12px;">
+          <strong style="color:#3b82f6;">Data Cleanup:</strong>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">
+            ${duplicatesRemoved > 0 ? `<div><strong>Duplicates Removed:</strong> ${duplicatesRemoved}</div>` : ''}
+            ${irrelevantRemoved > 0 ? `<div><strong>Irrelevant Rows Removed:</strong> ${irrelevantRemoved}</div>` : ''}
+          </div>
+        </div>
+      ` : '';
+      
       resultDiv.innerHTML = `
         <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
           <h3 style="margin:0 0 12px;color:#22c55e;">✅ Data Cleaned Successfully</h3>
@@ -2325,6 +2337,7 @@ function handleDataClean(event) {
             <div><strong>Processing Time:</strong> ${new Date(data.report.finished_at).getTime() - new Date(data.report.started_at).getTime()}ms</div>
           </div>
           ${crmInfo}
+          ${cleanupInfo}
           ${fixesInfo ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.2);"><strong>Fixes Applied:</strong><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;font-size:13px;">${fixesInfo}</div></div>` : ''}
         </div>
         <div style="margin-bottom:16px;">
@@ -2332,7 +2345,7 @@ function handleDataClean(event) {
           <textarea readonly rows="10" id="cleaned-csv-output" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:monospace;background:var(--bg);font-size:12px;">${data.cleaned_csv}</textarea>
         </div>
         <div style="display:flex;gap:12px;">
-          <button class="btn primary" onclick="downloadCSV('${data.cleaned_csv.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', 'cleaned_data.csv')">Download Cleaned CSV</button>
+          <button class="btn primary" onclick="downloadCleanedFile('${data.report.file_type}', document.getElementById('cleaned-csv-output').value)">Download Cleaned File</button>
           <button class="btn" onclick="copyToClipboard(document.getElementById('cleaned-csv-output').value)">Copy to Clipboard</button>
         </div>
       `;
@@ -2351,22 +2364,71 @@ function handleDataClean(event) {
   });
 }
 
+function downloadCleanedFile(originalFileType, content) {
+  // Determine file extension based on original type
+  let extension = 'csv';
+  let mimeType = 'text/csv;charset=utf-8;';
+  
+  if (originalFileType === 'json') {
+    // For JSON files, we can offer both CSV and JSON download
+    // But since we cleaned to CSV format, we'll download as CSV
+    extension = 'csv';
+  } else if (originalFileType === 'excel') {
+    extension = 'csv'; // Excel is converted to CSV for cleaning
+  } else if (originalFileType === 'tsv') {
+    extension = 'csv'; // TSV is converted to CSV
+  }
+  
+  const filename = `cleaned_data.${extension}`;
+  downloadCSV(content, filename);
+}
+
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     alert('Copied to clipboard!');
   }).catch(err => {
     console.error('Failed to copy:', err);
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+    }
+    document.body.removeChild(textarea);
   });
 }
 
 function downloadCSV(content, filename) {
-  const blob = new Blob([content], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  try {
+    // Ensure content is a string
+    const contentStr = typeof content === 'string' ? content : String(content);
+    
+    // Create blob with proper encoding
+    const blob = new Blob([contentStr], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'cleaned_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Download error:', error);
+    // Fallback: create a data URL
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(content);
+    const a = document.createElement('a');
+    a.href = dataUri;
+    a.download = filename || 'cleaned_data.csv';
+    a.click();
+  }
 }
 
 // Add spinner animation
